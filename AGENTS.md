@@ -28,6 +28,9 @@ agent locally. `npm install && npm run dev` must be the entire setup.
 - Frontend: React + Vite, markdown chat rendering, visible streaming and
   tool states. Lives in `client/`.
 - Backend: Node.js + Express + TypeScript. Lives in `server/`.
+- Shared package: `shared/` (npm workspaces) owns cross-boundary Zod
+  schemas and mandatory-language constants — defined once, imported by
+  both sides.
 - Model layer: Vercel AI SDK with `@ai-sdk/openai`.
 - Zod at every boundary: tools, middleware verdicts, API payloads, state.
 - Vector store: in-memory, built from `server/corpus/` at startup.
@@ -78,3 +81,21 @@ voice; auth or persistence beyond browser memory. Rationale:
 - Truth stack: `docs/agent/` — orientation, source-of-truth, roadmap,
   decisions, proof scripts. Index: `docs/agent/README.md`.
 - Role prompts and the shared slice intake packet: `prompts/`.
+
+## Learned User Preferences
+
+- Do not add deliberate failure-demo beats or near-threshold verdict
+  behavior to the planned architecture unless the user reopens that
+  decision.
+
+## Learned Workspace Facts
+
+- Guardrail path is two-stage before the agent loop: Stage 1 deterministic
+  PII sanitize, then Stage 2 hybrid classify (regex/phrase fast-paths,
+  then a small classifier model); classifier failure or timeout fails
+  closed.
+- Agent and classifier model IDs are pinned separately in
+  `server/src/config.ts` (`MODELS.agent` / `MODELS.classifier`).
+- Human-facing tradeoff narrative at `docs/technical-decisions.md` is
+  claims-only; `docs/agent/decisions/` remains authoritative if they
+  diverge.

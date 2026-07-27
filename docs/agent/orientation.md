@@ -26,9 +26,14 @@ the roadmap's scope-revision log.
 
 ## Current status
 
-- Active slice: none. Slice 0 (Skeleton and honest shell) is next.
-- Nothing is built. There is no product code in this repository yet.
-- Last gate passed: none.
+- Active slice: none. Slice 2 (Grounded RAG) is next.
+- Built so far: Slice 0 shell plus Slice 1 guardrails — npm workspaces,
+  envelope v1, Stage 1 sanitize + Stage 2 classify with templated
+  short-circuits and UI badges. No retrieval, tools, CaseFile state, or
+  grounded FNS content yet.
+- Last gate passed: Slice 1, 2026-07-25 — `proof/adversarial-script.md`
+  sections A–F all deflected with approved responses (`npm run eval` +
+  live API/UI). Evidence in `source-of-truth.md`.
 
 Update this section when a slice starts, passes its gate, or is blocked.
 

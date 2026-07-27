@@ -33,14 +33,20 @@
 
 ## Done-when (all must hold)
 
-- [ ] Gate passes, demonstrated via the proof-script steps above
-- [ ] source-of-truth.md updated with evidence citations, in this slice
-- [ ] orientation.md status section updated
-- [ ] No contradiction across README / UI / middleware / agent / demo
+- [x] Gate passes, demonstrated via the proof-script steps above
+- [x] source-of-truth.md updated with evidence citations, in this slice
+- [x] orientation.md status section updated
+- [x] No contradiction across README / UI / middleware / agent / demo
       script (or exception logged)
-- [ ] Any decision fork hit during work was settled as a decision doc,
+- [x] Any decision fork hit during work was settled as a decision doc,
       not by default
 
 ## Open questions / forks hit (planner fills, or "none")
 
 - none
+
+## Closed 2026-07-24 — GATE PASSED
+
+Pristine copy to first streamed reply in 4s against the 120s budget.
+Evidence recorded in `docs/agent/source-of-truth.md`. No forks hit, no
+Known Policy Exceptions recorded. This packet is now `historical`.

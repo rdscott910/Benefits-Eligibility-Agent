@@ -1,12 +1,13 @@
 # Decision: classifier design
 
 **Decision.** The guardrail classifier is hybrid. Deterministic
-fast-paths run first (an SSN regex is definitive; a short high-precision
-crisis phrase list short-circuits immediately). Everything else goes to
-a small, fast model via `generateObject`, constrained to the Zod verdict
-enum, with the user message passed as delimited data — never as
-instructions. Classifier and agent models are pinned separately in one
-config module.
+fast-paths run first (an SSN regex is definitive; short high-precision
+crisis and injection phrase lists short-circuit immediately). Everything
+else goes to a small, fast model via `generateText` + `Output.object`
+(AI SDK v7; same constrained-schema role as the formerly named
+`generateObject`), constrained to the Zod verdict enum, with the user
+message passed as delimited data — never as instructions. Classifier and
+agent models are pinned separately in one config module.
 
 **Rules (testable).**
 
@@ -25,4 +26,5 @@ config module.
 definitive cases; fail-open on classifier error — unclassified input
 reaching the agent breaks the integrity layer.
 
-**Date.** 2026-07-23, settled with user (architecture review R3, R10).
+**Date.** 2026-07-23 (R3, R10). **Revision 2026-07-25:** v7
+`Output.object` + injection fast-path for injection+PII; policy unchanged.

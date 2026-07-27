@@ -6,7 +6,7 @@ Gates, not time spent, decide when a slice is done: never cut scope or
 change a decision because of time. The PRD is the supreme scope
 authority — see the scope-revision log rules at the bottom.
 
-## Slice 0 — Skeleton and honest shell — NOT STARTED
+## Slice 0 — Skeleton and honest shell — GATE PASSED 2026-07-24
 
 - Intent: a reviewer can clone, install, and talk to a streaming model in
   under 2 minutes.
@@ -17,7 +17,7 @@ authority — see the scope-revision log rules at the bottom.
 - Out of scope: guardrails, RAG, tools, state, any FNS content.
 - Gate: fresh clone runs in under 2 minutes and streams a reply.
 
-## Slice 1 — Guardrail middleware — NOT STARTED
+## Slice 1 — Guardrail middleware — GATE PASSED 2026-07-25
 
 - Intent: safety owns the front door before any capability is added.
 - In scope: Stage 1 sanitize (deterministic PII redaction) then Stage 2
