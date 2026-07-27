@@ -1,0 +1,200 @@
+:root {
+  --bg: #f6f7f9;
+  --surface: #ffffff;
+  --border: #e2e5ea;
+  --text: #1c2024;
+  --muted: #667085;
+  --accent: #1f5f4f;
+  --accent-soft: #eaf3f0;
+  --danger: #9b2226;
+
+  color-scheme: light;
+  font-family: ui-sans-serif, system-ui, -apple-system, 'Segoe UI', Roboto,
+    Helvetica, Arial, sans-serif;
+  color: var(--text);
+}
+
+* {
+  box-sizing: border-box;
+}
+
+body {
+  margin: 0;
+  background: var(--bg);
+}
+
+.app {
+  display: flex;
+  flex-direction: column;
+  gap: 20px;
+  max-width: 780px;
+  min-height: 100vh;
+  margin: 0 auto;
+  padding: 32px 24px;
+}
+
+.header h1 {
+  margin: 0 0 6px;
+  font-size: 1.4rem;
+  letter-spacing: -0.01em;
+}
+
+.header p {
+  margin: 0;
+  max-width: 60ch;
+  color: var(--muted);
+  font-size: 0.9rem;
+  line-height: 1.55;
+}
+
+.transcript {
+  display: flex;
+  flex: 1;
+  flex-direction: column;
+  gap: 14px;
+}
+
+.empty,
+.pending {
+  margin: 0;
+  color: var(--muted);
+  font-size: 0.9rem;
+}
+
+.pending {
+  font-style: italic;
+}
+
+.message {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+  padding: 14px 16px;
+  border: 1px solid var(--border);
+  border-radius: 12px;
+  background: var(--surface);
+}
+
+.message--user {
+  border-color: transparent;
+  background: var(--accent-soft);
+}
+
+.message__meta {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 8px;
+}
+
+.message__role {
+  color: var(--muted);
+  font-size: 0.72rem;
+  font-weight: 600;
+  letter-spacing: 0.07em;
+  text-transform: uppercase;
+}
+
+.guardrail-badge {
+  padding: 2px 8px;
+  border-radius: 999px;
+  font-size: 0.68rem;
+  font-weight: 700;
+  letter-spacing: 0.04em;
+  text-transform: uppercase;
+}
+
+.guardrail-badge--crisis {
+  background: #fde8e8;
+  color: #9b2226;
+}
+
+.guardrail-badge--injection {
+  background: #fff4e5;
+  color: #9a5b00;
+}
+
+.guardrail-badge--pii {
+  background: #e8f0fe;
+  color: #1a4f9c;
+}
+
+.guardrail-badge--out_of_scope {
+  background: #eef0f3;
+  color: #4a5565;
+}
+
+.message__body {
+  font-size: 0.95rem;
+  line-height: 1.6;
+  overflow-wrap: anywhere;
+}
+
+.message__body > :first-child {
+  margin-top: 0;
+}
+
+.message__body > :last-child {
+  margin-bottom: 0;
+}
+
+.message__body pre {
+  overflow-x: auto;
+  padding: 12px;
+  border-radius: 8px;
+  background: #f1f3f5;
+}
+
+.message__body code {
+  font-family: ui-monospace, SFMono-Regular, Menlo, monospace;
+  font-size: 0.87em;
+}
+
+.error {
+  margin: 0;
+  padding: 12px 14px;
+  border: 1px solid #f0d0d1;
+  border-radius: 10px;
+  background: #fdf3f3;
+  color: var(--danger);
+  font-size: 0.9rem;
+}
+
+.composer {
+  display: flex;
+  position: sticky;
+  bottom: 24px;
+  gap: 10px;
+}
+
+.composer__input {
+  flex: 1;
+  padding: 12px 14px;
+  border: 1px solid var(--border);
+  border-radius: 10px;
+  background: var(--surface);
+  color: inherit;
+  font: inherit;
+}
+
+.composer__input:focus-visible,
+.composer__send:focus-visible {
+  outline: 2px solid var(--accent);
+  outline-offset: 2px;
+}
+
+.composer__send {
+  padding: 12px 20px;
+  border: none;
+  border-radius: 10px;
+  background: var(--accent);
+  color: #ffffff;
+  font: inherit;
+  font-weight: 600;
+  cursor: pointer;
+}
+
+.composer__send:disabled {
+  background: #b6bdc4;
+  cursor: not-allowed;
+}
