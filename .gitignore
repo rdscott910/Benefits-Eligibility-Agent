@@ -5,4 +5,5 @@ dist/
 *.log
 .DS_Store
 server/src/eval/last-run.json
+server/.embeddings-cache.json
 .cursor/hooks/state/
