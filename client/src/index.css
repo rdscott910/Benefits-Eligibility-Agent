@@ -150,6 +150,45 @@ body {
   font-size: 0.87em;
 }
 
+.retrieval {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 6px;
+  padding-top: 8px;
+  border-top: 1px dashed var(--border);
+}
+
+.retrieval__label {
+  color: var(--muted);
+  font-size: 0.68rem;
+  font-weight: 700;
+  letter-spacing: 0.06em;
+  text-transform: uppercase;
+}
+
+.citation-chip {
+  padding: 2px 8px;
+  border: 1px solid var(--border);
+  border-radius: 999px;
+  background: var(--accent-soft);
+  color: var(--accent);
+  font-family: ui-monospace, SFMono-Regular, Menlo, monospace;
+  font-size: 0.72rem;
+}
+
+.retrieval--no-match .retrieval__label {
+  color: #9a5b00;
+}
+
+.retrieval__referral {
+  flex-basis: 100%;
+  margin: 2px 0 0;
+  color: var(--text);
+  font-size: 0.85rem;
+  line-height: 1.5;
+}
+
 .error {
   margin: 0;
   padding: 12px 14px;

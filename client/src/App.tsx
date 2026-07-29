@@ -5,10 +5,13 @@ import Markdown from 'react-markdown';
 import {
   ENVELOPE_VERSION,
   GUARDRAIL_BADGE_LABELS,
+  REFERRAL_LINE,
+  retrievalPartDataSchema,
   shortCircuitVerdictSchema,
   type ChatMessage,
   type ChatRequest,
   type CivicReachUIMessage,
+  type RetrievalPartData,
   type ShortCircuitVerdict,
 } from '@civicreach/shared';
 
@@ -47,6 +50,59 @@ function guardrailVerdict(
     }
   }
   return null;
+}
+
+function retrievalOutcome(
+  message: CivicReachUIMessage,
+): RetrievalPartData | null {
+  for (const part of message.parts) {
+    if (part.type === 'data-retrieval') {
+      const parsed = retrievalPartDataSchema.safeParse(part.data);
+      if (parsed.success) {
+        return parsed.data;
+      }
+    }
+  }
+  return null;
+}
+
+/**
+ * Slice 2 renders retrieval honestly but minimally: source chips with the
+ * citation id and raw cosine score, and the official referral (from shared
+ * constants — the model never authors it) on no-match answers. Clickable
+ * chunk/score inspection is Slice 4.
+ */
+function RetrievalFooter({ outcome }: { outcome: RetrievalPartData }) {
+  switch (outcome.status) {
+    case 'grounded':
+      return (
+        <div className="retrieval retrieval--grounded">
+          <span className="retrieval__label">Sources</span>
+          {outcome.citations.map((citation) => (
+            <span
+              key={citation.citationId}
+              className="citation-chip"
+              title={citation.title}
+            >
+              {citation.citationId} · {citation.score.toFixed(2)}
+            </span>
+          ))}
+        </div>
+      );
+    case 'no_match':
+      return (
+        <div className="retrieval retrieval--no-match">
+          <span className="retrieval__label">Not in my documents</span>
+          <p className="retrieval__referral">{REFERRAL_LINE}</p>
+        </div>
+      );
+    case 'conversational':
+      return null;
+    default: {
+      const unhandled: never = outcome;
+      throw new Error(`Unhandled retrieval status: ${String(unhandled)}`);
+    }
+  }
 }
 
 export function App() {
@@ -106,21 +162,26 @@ export function App() {
       <header className="header">
         <h1>CivicReach</h1>
         <p>
-          Development shell. Safety guardrails run in front of the model, but
-          there is still no eligibility logic, no retrieval, and no grounded
-          benefits content behind it yet.
+          Estimates how likely you are to qualify for NC FNS food assistance.
+          Answers are grounded in six official NC documents (with sources
+          shown); questions outside them are declined honestly. No eligibility
+          math or memory of prior turns yet — and only NC DSS can determine
+          eligibility.
         </p>
       </header>
 
       <main className="transcript">
         {messages.length === 0 && (
           <p className="empty">
-            Send a message to confirm the stream works end to end.
+            Ask about NC FNS food assistance — for example, the income limits
+            for your household size, or how to apply.
           </p>
         )}
 
         {messages.map((message) => {
           const verdict = guardrailVerdict(message);
+          const retrieval =
+            message.role === 'assistant' ? retrievalOutcome(message) : null;
           return (
             <article
               key={message.id}
@@ -148,6 +209,7 @@ export function App() {
                   <p>{messageText(message)}</p>
                 )}
               </div>
+              {retrieval && <RetrievalFooter outcome={retrieval} />}
             </article>
           );
         })}
