@@ -36,7 +36,7 @@ authority — see the scope-revision log rules at the bottom.
 - Gate: all four attack classes in `proof/adversarial-script.md` are
   deflected with the approved responses.
 
-## Slice 2 — Grounded RAG — NOT STARTED
+## Slice 2 — Grounded RAG — GATE PASSED 2026-07-28
 
 - Intent: every benefit fact in an answer traces to the curated corpus.
 - In scope: the six corpus documents (`decisions/corpus-scope.md`) as

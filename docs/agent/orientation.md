@@ -26,14 +26,20 @@ the roadmap's scope-revision log.
 
 ## Current status
 
-- Active slice: none. Slice 2 (Grounded RAG) is next.
-- Built so far: Slice 0 shell plus Slice 1 guardrails — npm workspaces,
-  envelope v1, Stage 1 sanitize + Stage 2 classify with templated
-  short-circuits and UI badges. No retrieval, tools, CaseFile state, or
-  grounded FNS content yet.
-- Last gate passed: Slice 1, 2026-07-25 — `proof/adversarial-script.md`
-  sections A–F all deflected with approved responses (`npm run eval` +
-  live API/UI). Evidence in `source-of-truth.md`.
+- Active slice: none. Slice 3 (Deterministic tools + multi-turn state)
+  is next.
+- Built so far: Slice 0 shell, Slice 1 guardrails, Slice 2 grounded RAG —
+  six-document corpus in `server/corpus/` with dated front matter,
+  in-memory vector store (embeddings cached gitignored), cosine
+  retrieval with an explicit 0.28 threshold, boot-time Zod-validated
+  income-limits table (fail-fast), grounded answers with citation chips
+  (envelope v2 `data-retrieval` part), and the honest no-match path with
+  the UI-rendered ePASS/DSS referral. No tools, CaseFile state, verdict
+  tiers, or tool-status streaming yet.
+- Last gate passed: Slice 2, 2026-07-28 — live-review §3 both items in
+  the browser plus grounded-figure check ($4,442 verbatim from
+  `income-limits.md` with citations); `npm run eval` all attack classes
+  A–F and grounding R1–R4 Pass. Evidence in `source-of-truth.md`.
 
 Update this section when a slice starts, passes its gate, or is blocked.
 
