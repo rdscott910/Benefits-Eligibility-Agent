@@ -46,6 +46,21 @@ export function logRetrieval(event: RetrievalLogEvent): void {
   );
 }
 
+/**
+ * Tool telemetry: which deterministic tool ran, how long it took, and its
+ * outcome (a status word or tier, never a fact value) — same
+ * never-log-content policy as guardrails and retrieval.
+ */
+export type ToolLogEvent = {
+  tool: 'updateCaseFile' | 'lookupIncomeLimits' | 'checkIncomeThreshold';
+  latencyMs: number;
+  outcome: string;
+};
+
+export function logTool(event: ToolLogEvent): void {
+  console.log(JSON.stringify({ type: 'tool', ...event }));
+}
+
 export function logError(scope: string, error: unknown): void {
   const message =
     error instanceof Error ? error.name + ': ' + error.message : 'unknown_error';
