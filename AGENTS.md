@@ -87,6 +87,8 @@ voice; auth or persistence beyond browser memory. Rationale:
 - Do not add deliberate failure-demo beats or near-threshold verdict
   behavior to the planned architecture unless the user reopens that
   decision.
+- When asked how to break up commits, provide a staging and message plan
+  only — do not create commits unless explicitly asked.
 
 ## Learned Workspace Facts
 
@@ -94,8 +96,16 @@ voice; auth or persistence beyond browser memory. Rationale:
   PII sanitize, then Stage 2 hybrid classify (regex/phrase fast-paths,
   then a small classifier model); classifier failure or timeout fails
   closed.
-- Agent and classifier model IDs are pinned separately in
-  `server/src/config.ts` (`MODELS.agent` / `MODELS.classifier`).
+- Agent, classifier, and embedding model IDs are pinned separately in
+  `server/src/config.ts` (`MODELS.agent` / `MODELS.classifier` /
+  `MODELS.embedding`).
 - Human-facing tradeoff narrative at `docs/technical-decisions.md` is
   claims-only; `docs/agent/decisions/` remains authoritative if they
   diverge.
+- Curated NC FNS corpus is committed markdown under `server/corpus/`;
+  `server/.embeddings-cache.json` is gitignored and built on first boot
+  (or when the corpus/model cache key changes) via the reviewer's
+  `OPENAI_API_KEY`.
+- Retrieval uses cosine similarity with an explicit floor and top-K from
+  `RETRIEVAL` in `server/src/config.ts`; below-threshold matches take the
+  no-match path rather than a weak-evidence answer.
