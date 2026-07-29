@@ -1,11 +1,12 @@
 import { tool } from 'ai';
-import { z } from 'zod';
 import {
-  caseFileFactKeySchema,
-  caseFileFactStatusSchema,
   caseFileSchema,
+  updateCaseFileInputSchema,
+  updateCaseFileOutputSchema,
   type CaseFile,
   type CaseFileFactKey,
+  type UpdateCaseFileInput,
+  type UpdateCaseFileOutput,
 } from '@civicreach/shared';
 import { logTool } from '../log';
 
@@ -23,47 +24,12 @@ import { logTool } from '../log';
  * - `confirmation`   → confirmed
  *
  * Math tools accept only stated/confirmed values, so nothing downstream can
- * run on a guess or an unresolved contradiction.
+ * run on a guess or an unresolved contradiction. The I/O schemas live in
+ * `shared/src/tools.ts` since Slice 4 (the client renders tool I/O in the
+ * trace drawer); the executor and transition table stay here.
  */
 
 export type CaseFileHolder = { current: CaseFile };
-
-export const updateCaseFileInputSchema = z.object({
-  fact: caseFileFactKeySchema,
-  /** For grossMonthlyIncome (dollars/month, ≥ 0) and householdSize (people); null for county. */
-  numberValue: z.number().nullable(),
-  /** For county; null for the numeric facts. */
-  stringValue: z.string().nullable(),
-  /**
-   * How the user expressed it. "stated": a plain statement — use this even
-   * when the new value conflicts with what is on file (the tool detects the
-   * conflict and tells you what to ask; never silently pick a side).
-   * "uncertain": vague or hedged ("about", "I think", "it varies").
-   * "correction": ONLY when the user explicitly says the earlier value was
-   * wrong ("actually, I was wrong — it's $2,400"). "confirmation": the
-   * direct answer to your clarifying question about which value is right.
-   */
-  expression: z.enum(['stated', 'uncertain', 'correction', 'confirmation']),
-});
-export type UpdateCaseFileInput = z.infer<typeof updateCaseFileInputSchema>;
-
-export const updateCaseFileOutputSchema = z.object({
-  outcome: z.enum([
-    'stored',
-    'replaced',
-    'confirmed',
-    'needs_confirmation',
-    'contradiction',
-    'invalid',
-  ]),
-  fact: caseFileFactKeySchema,
-  value: z.union([z.number(), z.string()]).nullable(),
-  previousValue: z.union([z.number(), z.string()]).nullable(),
-  status: caseFileFactStatusSchema.nullable(),
-  /** What the model must do next; deterministic, from the transition table. */
-  instruction: z.string(),
-});
-export type UpdateCaseFileOutput = z.infer<typeof updateCaseFileOutputSchema>;
 
 type FactValue = number | string;
 

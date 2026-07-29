@@ -1,14 +1,16 @@
 import { tool } from 'ai';
-import { z } from 'zod';
 import {
+  checkIncomeThresholdInputSchema,
+  checkIncomeThresholdOutputSchema,
   verdictPartDataSchema,
-  verdictTierSchema,
+  type CheckIncomeThresholdInput,
+  type CheckIncomeThresholdOutput,
   type VerdictPartData,
   type VerdictTier,
 } from '@civicreach/shared';
 import type { IncomeLimitsTable } from '../corpus/income-table';
 import { logTool } from '../log';
-import { resolveIncomeLimits, resolvedLimitsSchema } from './lookup-income-limits';
+import { resolveIncomeLimits } from './lookup-income-limits';
 import type { CaseFileHolder } from './update-case-file';
 
 /**
@@ -18,34 +20,9 @@ import type { CaseFileHolder } from './update-case-file';
  * likelihood tier. It takes NO inputs from the model — values come only from
  * the working CaseFile, and anything missing or pending confirmation gets a
  * typed refusal. "Never called with guessed inputs" is structural here, not
- * a prompt instruction.
+ * a prompt instruction. I/O schemas live in `shared/src/tools.ts` since
+ * Slice 4 (the client renders tool I/O in the trace drawer).
  */
-
-export const checkIncomeThresholdInputSchema = z.object({});
-export type CheckIncomeThresholdInput = z.infer<typeof checkIncomeThresholdInputSchema>;
-
-const requiredFactSchema = z.enum(['householdSize', 'grossMonthlyIncome']);
-
-export const checkIncomeThresholdOutputSchema = z.discriminatedUnion('ok', [
-  z.object({
-    ok: z.literal(true),
-    /** Selected by this tool's comparison, never by model judgment. */
-    tier: verdictTierSchema,
-    grossMonthlyIncome: z.number().min(0),
-    limits: resolvedLimitsSchema,
-    /** Plain-language comparison for the model to narrate verbatim figures from. */
-    comparison: z.string(),
-  }),
-  z.object({
-    ok: z.literal(false),
-    /** Facts absent from the CaseFile. */
-    missingFacts: z.array(requiredFactSchema),
-    /** Facts on file but awaiting the user's confirmation. */
-    pendingFacts: z.array(requiredFactSchema),
-    instruction: z.string(),
-  }),
-]);
-export type CheckIncomeThresholdOutput = z.infer<typeof checkIncomeThresholdOutputSchema>;
 
 /** The settled tier mapping — boundaries inclusive, gross columns only. */
 export function selectTier(

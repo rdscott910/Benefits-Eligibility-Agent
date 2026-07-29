@@ -9,12 +9,17 @@
  * hardcoded fixture numbers that could drift from `server/corpus/`.
  */
 import { beforeAll, describe, expect, it } from 'vitest';
-import { chatRequestSchema, type CaseFile } from '@civicreach/shared';
+import {
+  ENVELOPE_VERSION,
+  chatRequestSchema,
+  type CaseFile,
+  type UpdateCaseFileInput,
+} from '@civicreach/shared';
 import { parseIncomeLimitsTable, type IncomeLimitsTable } from '../corpus/income-table';
 import { loadCorpusDocuments } from '../corpus/loader';
 import { runIncomeThresholdCheck, selectTier } from './check-income-threshold';
 import { resolveIncomeLimits } from './lookup-income-limits';
-import { applyCaseFileUpdate, type UpdateCaseFileInput } from './update-case-file';
+import { applyCaseFileUpdate } from './update-case-file';
 
 let table: IncomeLimitsTable;
 
@@ -304,9 +309,9 @@ describe('runIncomeThresholdCheck (CaseFile-gated)', () => {
   });
 });
 
-describe('envelope v3 request boundary', () => {
+describe('envelope request boundary (current version)', () => {
   const baseRequest = {
-    envelopeVersion: 3,
+    envelopeVersion: ENVELOPE_VERSION,
     messages: [
       { id: 'u1', role: 'user', parts: [{ type: 'text', text: 'hi' }] },
     ],

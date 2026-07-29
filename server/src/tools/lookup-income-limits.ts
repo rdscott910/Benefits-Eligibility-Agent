@@ -1,6 +1,10 @@
 import { tool } from 'ai';
-import { z } from 'zod';
-import { verdictLimitsSchema } from '@civicreach/shared';
+import {
+  lookupIncomeLimitsInputSchema,
+  resolvedLimitsSchema,
+  type LookupIncomeLimitsInput,
+  type ResolvedLimits,
+} from '@civicreach/shared';
 import type { IncomeLimitsTable } from '../corpus/income-table';
 import { logTool } from '../log';
 
@@ -11,24 +15,9 @@ import { logTool } from '../log';
  * numbers: every figure comes from `server/corpus/income-limits.md` via the
  * Zod-validated table, and unit sizes above 8 extend the table with the
  * corpus's own "each additional member" increments — arithmetic that lives
- * here, never in the model.
+ * here, never in the model. I/O schemas live in `shared/src/tools.ts` since
+ * Slice 4 (the client renders tool I/O in the trace drawer).
  */
-
-export const lookupIncomeLimitsInputSchema = z.object({
-  /** Number of people in the FNS household (unit size). */
-  householdSize: z.number().int().min(1),
-});
-export type LookupIncomeLimitsInput = z.infer<typeof lookupIncomeLimitsInputSchema>;
-
-export const resolvedLimitsSchema = verdictLimitsSchema.extend({
-  /**
-   * True when the unit size is above the table's 8 explicit rows and the
-   * limits were extended with the "each additional member" increments —
-   * such figures are corpus-derived but not verbatim table cells.
-   */
-  extendedBeyondTable: z.boolean(),
-});
-export type ResolvedLimits = z.infer<typeof resolvedLimitsSchema>;
 
 /** Resolve the limits row for a unit size (rows 1–8, extended beyond 8). */
 export function resolveIncomeLimits(

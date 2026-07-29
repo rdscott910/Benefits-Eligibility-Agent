@@ -15,7 +15,12 @@ export const NO_MATCH_SENTENCE = "I don't have that in my documents.";
 export const REFERRAL_LINE =
   'To apply or get an official decision, use ePASS at epass.nc.gov or contact your local county DSS office.';
 
-/** One retrieved corpus chunk surfaced as a citation on a grounded answer. */
+/**
+ * One retrieved corpus chunk surfaced as a citation on a grounded answer.
+ * Since Slice 4 the citation carries the exact chunk content, so the UI's
+ * clickable chips can reveal the chunk and its score without another
+ * round-trip (grounding-policy.md, 2026-07-23 revision).
+ */
 export const citationSchema = z.object({
   /** Stable chunk id, e.g. "income-limits#1". */
   citationId: z.string().min(1),
@@ -23,6 +28,10 @@ export const citationSchema = z.object({
   docId: z.string().min(1),
   /** Document title from front matter. */
   title: z.string().min(1),
+  /** Section heading of the chunk (document title for the preamble chunk). */
+  heading: z.string().min(1),
+  /** The exact chunk markdown as retrieved — what the model was shown. */
+  text: z.string().min(1),
   /** Cosine similarity of the chunk against the user's message. */
   score: z.number().min(-1).max(1),
 });

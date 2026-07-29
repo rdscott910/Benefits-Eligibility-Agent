@@ -47,3 +47,10 @@ Path clarification, same date: tools live at `server/src/tools/` — the
 server typechecks `include: ["src"]` only, so a sibling `server/tools/`
 would sit outside the build. The layout rule is otherwise unchanged: one
 file per tool, Zod schemas colocated.
+
+**Revision 2026-07-29 (Slice 4, schema location).** The trace drawer
+renders real tool inputs/outputs in the client, which makes tool I/O a
+cross-boundary contract — so the I/O Zod schemas moved to
+`shared/src/tools.ts` (stack-boundaries R1: defined once, imported by
+both sides). Executors and the `tool()` wiring stay one-file-per-tool in
+`server/src/tools/`; tool behavior is unchanged.
