@@ -175,6 +175,52 @@ body {
   color: var(--accent);
   font-family: ui-monospace, SFMono-Regular, Menlo, monospace;
   font-size: 0.72rem;
+  cursor: pointer;
+}
+
+.citation-chip:hover {
+  border-color: var(--accent);
+}
+
+.citation-chip:focus-visible {
+  outline: 2px solid var(--accent);
+  outline-offset: 2px;
+}
+
+.citation-chip--open {
+  border-color: var(--accent);
+  background: var(--accent);
+  color: #ffffff;
+}
+
+.citation-detail {
+  flex-basis: 100%;
+  margin-top: 6px;
+  padding: 10px 12px;
+  border: 1px solid var(--border);
+  border-left: 4px solid var(--accent);
+  border-radius: 8px;
+  background: #fafbfc;
+}
+
+.citation-detail__meta {
+  margin: 0 0 6px;
+  color: var(--muted);
+  font-size: 0.78rem;
+  line-height: 1.5;
+}
+
+.citation-detail__text {
+  font-size: 0.85rem;
+  line-height: 1.55;
+}
+
+.citation-detail__text > :first-child {
+  margin-top: 0;
+}
+
+.citation-detail__text > :last-child {
+  margin-bottom: 0;
 }
 
 .retrieval--no-match .retrieval__label {
@@ -246,14 +292,21 @@ body {
 
 .casefile {
   display: flex;
-  flex-wrap: wrap;
-  align-items: baseline;
+  flex-direction: column;
   gap: 8px;
   padding: 10px 14px;
   border: 1px dashed var(--border);
   border-radius: 10px;
   background: var(--surface);
   font-size: 0.85rem;
+}
+
+.casefile__header {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: baseline;
+  justify-content: space-between;
+  gap: 8px;
 }
 
 .casefile__label {
@@ -264,13 +317,274 @@ body {
   text-transform: uppercase;
 }
 
-.casefile__facts {
-  color: var(--text);
-}
-
 .casefile__note {
   color: var(--muted);
   font-size: 0.75rem;
+}
+
+.casefile__empty {
+  margin: 0;
+  color: var(--muted);
+  font-size: 0.82rem;
+}
+
+.casefile__rows {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+
+.casefile__row {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: baseline;
+  gap: 8px;
+}
+
+.casefile__fact-label {
+  min-width: 170px;
+  color: var(--muted);
+  font-size: 0.78rem;
+}
+
+.casefile__fact-value {
+  font-weight: 600;
+}
+
+.casefile__status {
+  padding: 1px 8px;
+  border-radius: 999px;
+  font-size: 0.68rem;
+  font-weight: 700;
+  letter-spacing: 0.04em;
+  text-transform: uppercase;
+}
+
+.casefile__status--stated {
+  background: var(--accent-soft);
+  color: var(--accent);
+}
+
+.casefile__status--confirmed {
+  background: #e8f0fe;
+  color: #1a4f9c;
+}
+
+.casefile__status--needs_confirmation {
+  background: #fff4e5;
+  color: #9a5b00;
+}
+
+/* Tool status chips — rendered only from typed tool parts (Slice 4). */
+
+.tool-status {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 6px;
+}
+
+.tool-status__chip {
+  padding: 2px 10px;
+  border: 1px solid var(--border);
+  border-radius: 999px;
+  font-size: 0.72rem;
+  font-weight: 600;
+}
+
+.tool-status__chip--running {
+  border-color: #d9c48a;
+  background: #fff9ec;
+  color: #7a5b00;
+  animation: tool-pulse 1.2s ease-in-out infinite;
+}
+
+.tool-status__chip--done {
+  border-color: transparent;
+  background: var(--accent-soft);
+  color: var(--accent);
+}
+
+.tool-status__chip--failed {
+  border-color: #f0d0d1;
+  background: #fdf3f3;
+  color: var(--danger);
+}
+
+@keyframes tool-pulse {
+  0%,
+  100% {
+    opacity: 1;
+  }
+  50% {
+    opacity: 0.55;
+  }
+}
+
+/* Glass-box trace drawer (Slice 4, trace-transparency.md). */
+
+.trace {
+  margin-top: 4px;
+  border: 1px solid var(--border);
+  border-radius: 10px;
+  background: #fafbfc;
+  font-size: 0.82rem;
+}
+
+.trace__summary {
+  padding: 8px 12px;
+  color: var(--muted);
+  font-size: 0.72rem;
+  font-weight: 700;
+  letter-spacing: 0.05em;
+  text-transform: uppercase;
+  cursor: pointer;
+}
+
+.trace__summary:focus-visible {
+  outline: 2px solid var(--accent);
+  outline-offset: 2px;
+}
+
+.trace[open] .trace__summary {
+  border-bottom: 1px solid var(--border);
+}
+
+.trace__body {
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+  padding: 12px;
+}
+
+.trace__section {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+}
+
+.trace__heading {
+  margin: 0;
+  color: var(--muted);
+  font-size: 0.68rem;
+  font-weight: 700;
+  letter-spacing: 0.06em;
+  text-transform: uppercase;
+}
+
+.trace__line {
+  margin: 0;
+  line-height: 1.5;
+}
+
+.trace__line--muted {
+  color: var(--muted);
+}
+
+.trace__empty {
+  margin: 0;
+  color: var(--muted);
+  font-style: italic;
+}
+
+.trace__list {
+  margin: 0;
+  padding-left: 18px;
+  line-height: 1.55;
+}
+
+.trace__tools {
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+}
+
+.trace__tool-name {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  margin: 0 0 4px;
+}
+
+.trace__tool-phase {
+  padding: 1px 8px;
+  border-radius: 999px;
+  font-size: 0.65rem;
+  font-weight: 700;
+  letter-spacing: 0.04em;
+  text-transform: uppercase;
+}
+
+.trace__tool-phase--running {
+  background: #fff9ec;
+  color: #7a5b00;
+}
+
+.trace__tool-phase--done {
+  background: var(--accent-soft);
+  color: var(--accent);
+}
+
+.trace__tool-phase--failed {
+  background: #fdf3f3;
+  color: var(--danger);
+}
+
+.trace__io {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+}
+
+.trace__io-label {
+  color: var(--muted);
+  font-size: 0.65rem;
+  font-weight: 700;
+  letter-spacing: 0.06em;
+  text-transform: uppercase;
+}
+
+.trace__json {
+  margin: 0;
+  padding: 8px 10px;
+  overflow-x: auto;
+  border-radius: 6px;
+  background: #f1f3f5;
+  font-family: ui-monospace, SFMono-Regular, Menlo, monospace;
+  font-size: 0.75rem;
+  line-height: 1.45;
+}
+
+/* Markdown tables (GFM, Slice 4). */
+
+.message__body table,
+.citation-detail__text table {
+  margin: 8px 0;
+  border-collapse: collapse;
+  font-size: 0.85rem;
+}
+
+.message__body th,
+.message__body td,
+.citation-detail__text th,
+.citation-detail__text td {
+  padding: 6px 10px;
+  border: 1px solid var(--border);
+  text-align: left;
+}
+
+.message__body th,
+.citation-detail__text th {
+  background: var(--accent-soft);
+  color: var(--accent);
+  font-weight: 600;
+}
+
+.message__body tbody tr:nth-child(even),
+.citation-detail__text tbody tr:nth-child(even) {
+  background: #fafbfc;
 }
 
 .error {

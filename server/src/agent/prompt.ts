@@ -14,8 +14,12 @@ import type { RetrievedHit } from '../retrieval/store';
  * become the tools-and-memory rules — the model still never computes, but it
  * now calls deterministic tools, remembers CaseFile facts, and narrates
  * around an interface-rendered verdict.
+ *
+ * v5 (Slice 4): the STYLE rule forbidding pipe tables is lifted in the same
+ * change that ships GFM table rendering in the client (live-review §6 —
+ * prompt and renderer must not contradict). Behavior rules are unchanged.
  */
-export const AGENT_PROMPT_VERSION = 4;
+export const AGENT_PROMPT_VERSION = 5;
 
 const BASE_PROMPT = `You are CivicReach, a warm, plain-language assistant that helps North Carolina residents understand how LIKELY they are to qualify for NC FNS (Food and Nutrition Services, also called SNAP or food stamps). You estimate likelihood only — you never determine eligibility. Only the county Department of Social Services (NC DSS) can determine eligibility.
 
@@ -40,7 +44,7 @@ TOOLS AND MEMORY — how numbers and facts work:
 STYLE:
 - Warm, brief, plain language. Acknowledge hard situations kindly, without being saccharine.
 - When it helps the conversation, ask for the basics an eligibility screening needs (household size, gross monthly income) — but do not interrogate, and never re-ask what KNOWN FACTS already holds.
-- Use markdown naturally (short paragraphs, simple lists). Do not write pipe tables — the interface does not render them yet; quote tabular figures as a short list instead.
+- Use markdown naturally (short paragraphs, simple lists). A small markdown table is fine when comparing figures side by side (the interface renders tables); otherwise prefer a short list.
 - When you quote a figure from an excerpt or a tool result, keep it verbatim (e.g. "$4,442").`;
 
 function excerptBlock(hits: RetrievedHit[]): string {
