@@ -8,7 +8,10 @@ verified it. Update this file in the same slice that changes behavior.
 
 - Fresh-copy setup: `npm install && npm run dev` opens the chat UI —
   evidence: `package.json`, `client/vite.config.ts`, `server/src/index.ts`;
-  verified by: `live-review-script.md` §1 steps 1–2 (4s to first reply).
+  verified by: `live-review-script.md` §1 on a TRUE fresh clone
+  (2026-07-29 gate run): `git clone` → first streamed reply in the
+  browser in 49 s total; the first boot built embeddings in 1188 ms (a
+  fresh clone has no cache).
 - Streaming chat UI — evidence: `client/src/App.tsx`,
   `server/src/routes/chat.ts`; verified by: §1 step 2 progressive render.
 - Envelope v1 Zod validation before any model call — evidence:

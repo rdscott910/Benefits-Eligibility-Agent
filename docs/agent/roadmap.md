@@ -65,7 +65,7 @@ authority — see the scope-revision log rules at the bottom.
 - Gate: the live-review script's math tie-out passes and the
   "I make $2,000/month" memory check passes.
 
-## Slice 4 — Transparency UX + proof hardening — NOT STARTED
+## Slice 4 — Transparency UX + proof hardening — GATE PASSED 2026-07-29
 
 - Intent: the live review passes end to end on a fresh clone.
 - In scope: streaming tool status ("Checking NC FNS income limits…"),

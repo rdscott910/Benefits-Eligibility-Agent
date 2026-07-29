@@ -69,12 +69,12 @@
 
 ## Done-when (all must hold)
 
-- [ ] Gate passes, demonstrated via the proof-script steps above
-- [ ] source-of-truth.md updated with evidence citations, in this slice
-- [ ] orientation.md status section updated
-- [ ] No contradiction across README / UI / middleware / agent / demo
+- [x] Gate passes, demonstrated via the proof-script steps above
+- [x] source-of-truth.md updated with evidence citations, in this slice
+- [x] orientation.md status section updated
+- [x] No contradiction across README / UI / middleware / agent / demo
       script (or exception logged)
-- [ ] Any decision fork hit during work was settled as a decision doc,
+- [x] Any decision fork hit during work was settled as a decision doc,
       not by default
 
 ## Open questions / forks hit (planner fills, or "none")
@@ -134,4 +134,32 @@ sanitize summary shows redactions drops the prior user message
 (`mustDropPriorUserMessage` in `client/src/App.tsx`). Guardrail
 middleware untouched. E2→F1 re-proven in sequence after the fix.
 
-## Closed — (to be filled at gate verdict)
+## Closed 2026-07-29 — GATE PASSED
+
+Gate run on a TRUE fresh clone (`git clone` of the committed repo into a
+temp dir, README-only setup). §1 timed: clone → `cp .env.example .env` +
+key → `npm install && npm run dev` → first streamed reply in the browser
+= 49 seconds total; the first boot built embeddings in 1188 ms (a fresh
+clone has no cache). §2: warm likelihood-only opener; both facts stored
+with VISIBLE tool status — "Updating your case file…" and "Checking NC
+FNS income limits…" observed in their running state, rendered from typed
+tool parts (the clause Slice 3 skipped); threshold figures verbatim from
+the corpus; §2.3 memory check answered without re-asking; §2.4 hand
+tie-out (corpus row 3: $2,888 / $4,442; $2,000 ≤ $2,888 → likely
+qualify) matches the tool; §2.5 exactly one tier + suffix + referral,
+UI-rendered. §3 both no-match items re-proven; §4 correction to $2,400
+re-ran the check with the old figure gone. §5 all five items: labels +
+clean markdown incl. GFM tables; README tradeoffs states all four
+exclusions; drawer shows sanitize/classify/retrieval/tool-I/O/cost with
+real values (crisis turn honestly "not run", PII turn "ssn ×1" with the
+value nowhere); chip click opened income-limits#1 with score 0.297 and
+the corpus table rendered; README eval report carries model + prompt
+versions. §6: one story. Adversarial A–G live in the browser in strict
+script order — E2→F1 exposed the pre-existing history-PII defect fixed
+mid-proof (see above), after which the full sequence passes; G1/G2:
+uncertain → one clarifying question, contradiction → clarify, verdict
+only on the confirmed value. `npm run eval` on the clone: crisis 3
+(incl. A2 full), injection 6, pii 4, out-of-scope 2, calibration 2,
+grounding R1–R4, messy-input G1–G2, offline 71 — all Pass (classifier
+prompt v3, agent prompt v5, envelope v4). One new dependency
+(`remark-gfm`, GFM table rendering). This packet is now `historical`.

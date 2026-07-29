@@ -26,10 +26,9 @@ the roadmap's scope-revision log.
 
 ## Current status
 
-- Active slice: Slice 4 (Transparency UX + proof hardening) — the FINAL
-  slice. Implementation complete 2026-07-29; the fresh-clone gate run
-  (live-review §1–§6 end to end) is pending. After its gate verdict the
-  roadmap ends: there is no Slice 5, only the live review itself.
+- Active slice: none — the roadmap is COMPLETE. Slice 4 (the final
+  slice) passed its gate 2026-07-29; what remains is the live review
+  itself. There is no Slice 5.
 - Built so far: Slice 0 shell, Slice 1 guardrails, Slice 2 grounded RAG,
   Slice 3 deterministic tools + multi-turn state — three Zod tools
   consuming the boot-parsed income-limits table (`lookupIncomeLimits`,
@@ -44,12 +43,18 @@ the roadmap's scope-revision log.
   score, GFM tables, the "What I know so far" panel with fact statuses,
   README tradeoffs section, and pinned pricing for the cost estimate
   (`decisions/trace-transparency.md`).
-- Last gate passed: Slice 3, 2026-07-29 — live-review §2 items 2–5
-  (memory check answered without re-asking; math tie-out reproduced by
-  hand: household of 3, $2,000 ≤ $2,888 at 130% → "you likely qualify")
-  and §4 correction in the browser; §3 re-proven; `npm run eval` all
-  attack classes A–F, grounding R1–R4, and messy-input G1–G2 Pass
-  (agent prompt v4, envelope v3). Evidence in `source-of-truth.md`.
+- Last gate passed: Slice 4, 2026-07-29 — the ENTIRE live-review script
+  §1–§6 on a true fresh clone: §1 timed at 49 s from `git clone` to the
+  first streamed reply (first boot built embeddings in 1188 ms — no
+  cache in a fresh clone); §2 including the visible-tool-status clause
+  (running labels observed from typed tool parts); §2.4 hand tie-out
+  matches the tool; §3–§4 re-proven; all five §5 transparency items; §6
+  one story. Adversarial A–G live in the browser in strict script order
+  (one mid-proof client fix: any rejected message containing detected
+  PII is dropped from history regardless of winning verdict — recorded
+  in the slice-4 packet and source-of-truth). `npm run eval` on the
+  clone fully green (classifier prompt v3, agent prompt v5, envelope
+  v4). Evidence in `source-of-truth.md`.
 
 Update this section when a slice starts, passes its gate, or is blocked.
 
