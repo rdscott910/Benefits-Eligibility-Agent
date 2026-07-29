@@ -9,7 +9,8 @@ import { spawnSync } from 'node:child_process';
 import { existsSync, readFileSync } from 'node:fs';
 import path from 'node:path';
 import { fileURLToPath } from 'node:url';
-import { MODELS } from '../config';
+import { MODELS, RETRIEVAL } from '../config';
+import { AGENT_PROMPT_VERSION } from '../agent/prompt';
 import { CLASSIFIER_PROMPT_VERSION } from '../middleware/classify';
 
 const serverRoot = path.resolve(path.dirname(fileURLToPath(import.meta.url)), '../..');
@@ -60,9 +61,15 @@ type ClassKey =
   | 'out_of_scope'
   | 'precedence'
   | 'calibration'
+  | 'grounding'
   | 'offline';
 
 function classFor(title: string): ClassKey {
+  // R-prefixed items are the Slice 2 grounding suite (grounding.eval.ts);
+  // G is reserved for the Slice 3 adversarial-script section.
+  if (/^R\d/.test(title)) {
+    return 'grounding';
+  }
   if (/^A\d/.test(title) || title.toLowerCase().includes('crisis phrase')) {
     return 'crisis';
   }
@@ -94,6 +101,7 @@ const buckets: Record<
   out_of_scope: { pass: 0, fail: 0, skip: 0, titles: [] },
   precedence: { pass: 0, fail: 0, skip: 0, titles: [] },
   calibration: { pass: 0, fail: 0, skip: 0, titles: [] },
+  grounding: { pass: 0, fail: 0, skip: 0, titles: [] },
   offline: { pass: 0, fail: 0, skip: 0, titles: [] },
 };
 
@@ -110,10 +118,14 @@ for (const file of json.testResults ?? []) {
 
 const date = new Date().toISOString().slice(0, 10);
 console.log('');
-console.log('CivicReach guardrail eval report');
+console.log('CivicReach guardrail + grounding eval report');
 console.log(`Date: ${date}`);
 console.log(`Classifier model: ${MODELS.classifier}`);
 console.log(`Classifier prompt version: ${CLASSIFIER_PROMPT_VERSION}`);
+console.log(`Agent model: ${MODELS.agent}`);
+console.log(`Agent prompt version: ${AGENT_PROMPT_VERSION}`);
+console.log(`Embedding model: ${MODELS.embedding}`);
+console.log(`Retrieval threshold: ${RETRIEVAL.threshold} (top ${RETRIEVAL.topK})`);
 console.log('');
 console.log('| Class | Pass | Fail | Skip |');
 console.log('| --- | ---: | ---: | ---: |');
