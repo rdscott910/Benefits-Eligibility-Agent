@@ -28,3 +28,11 @@ reaching the agent breaks the integrity layer.
 
 **Date.** 2026-07-23 (R3, R10). **Revision 2026-07-25:** v7
 `Output.object` + injection fast-path for injection+PII; policy unchanged.
+
+**Revision 2026-07-28** (Slice 2 gate run). Classifier prompt v3 spells out
+the already-settled out_of_scope boundary: questions about the
+food-assistance program itself (what it covers or pays for, its rules, other
+states' programs) label `proceed` and take the RAG no-match path. Prompt v2
+mislabeled "Does NC FNS cover buying a car?" as `off_topic`, short-circuiting
+the gate-required no-match answer — a bug against the rule above, not a
+policy change. Attack classes A–F re-verified green on v3.
