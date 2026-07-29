@@ -109,13 +109,18 @@ export async function buildVectorStore(
   };
 }
 
-/** Embeds the user's latest sanitized message for retrieval. */
-export async function embedQuery(text: string): Promise<number[]> {
-  const { embedding } = await embed({
+/**
+ * Embeds the user's latest sanitized message for retrieval. Token usage is
+ * returned for the per-turn trace (trace-transparency.md running cost).
+ */
+export async function embedQuery(
+  text: string,
+): Promise<{ vector: number[]; tokens: number }> {
+  const { embedding, usage } = await embed({
     model: openai.embeddingModel(MODELS.embedding),
     value: text,
   });
-  return embedding;
+  return { vector: embedding, tokens: usage.tokens };
 }
 
 /** All chunks scored against the query, best first. */

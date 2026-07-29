@@ -44,7 +44,7 @@ async function answer(question: string): Promise<{
   const outcome = await runGuardrailPipeline([userMessage(question)]);
   expect(outcome.kind).toBe('proceed');
 
-  const queryVector = await embedQuery(question);
+  const { vector: queryVector } = await embedQuery(question);
   const { hits, bestScore } = retrieveAboveThreshold({
     store,
     queryVector,

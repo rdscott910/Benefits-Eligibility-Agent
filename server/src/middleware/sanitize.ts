@@ -1,4 +1,4 @@
-import type { ChatMessage, PiiKind } from '@civicreach/shared';
+import type { ChatMessage, PiiKind, TraceRedaction } from '@civicreach/shared';
 
 /**
  * Stage 1 — deterministic PII redaction. Runs before the classifier, logs,
@@ -33,40 +33,61 @@ function uniqueKinds(kinds: PiiKind[]): PiiKind[] {
 export function redactText(text: string): {
   text: string;
   kinds: PiiKind[];
+  /** How many values of each kind were redacted — metadata for the trace, never the values. */
+  counts: TraceRedaction[];
   hasDefinitiveSsn: boolean;
 } {
   const kinds: PiiKind[] = [];
+  const counts: TraceRedaction[] = [];
   let next = text;
 
-  const ssnMatches = next.match(SSN_PATTERN);
-  const hasDefinitiveSsn = Boolean(ssnMatches?.length);
+  const note = (kind: PiiKind, count: number): void => {
+    if (count > 0) {
+      kinds.push(kind);
+      counts.push({ kind, count });
+    }
+  };
+
+  const ssnCount = next.match(SSN_PATTERN)?.length ?? 0;
+  const hasDefinitiveSsn = ssnCount > 0;
   if (hasDefinitiveSsn) {
-    kinds.push('ssn');
     next = next.replace(SSN_PATTERN, '[redacted: ssn]');
   }
+  note('ssn', ssnCount);
 
-  if (FULL_DOB_PATTERN.test(next)) {
-    kinds.push('full_dob');
-  }
-  FULL_DOB_PATTERN.lastIndex = 0;
+  const dobCount = next.match(FULL_DOB_PATTERN)?.length ?? 0;
   next = next.replace(FULL_DOB_PATTERN, '[redacted: full_dob]');
+  note('full_dob', dobCount);
 
-  if (DRIVERS_LICENSE_PATTERN.test(next)) {
-    kinds.push('drivers_license');
-  }
-  DRIVERS_LICENSE_PATTERN.lastIndex = 0;
+  const licenseCount = next.match(DRIVERS_LICENSE_PATTERN)?.length ?? 0;
   next = next.replace(
     DRIVERS_LICENSE_PATTERN,
     "driver's license [redacted: drivers_license]",
   );
+  note('drivers_license', licenseCount);
 
-  if (ACCOUNT_NUMBER_PATTERN.test(next)) {
-    kinds.push('account_number');
-  }
-  ACCOUNT_NUMBER_PATTERN.lastIndex = 0;
+  const accountCount = next.match(ACCOUNT_NUMBER_PATTERN)?.length ?? 0;
   next = next.replace(ACCOUNT_NUMBER_PATTERN, '[redacted: account_number]');
+  note('account_number', accountCount);
 
-  return { text: next, kinds: uniqueKinds(kinds), hasDefinitiveSsn };
+  return { text: next, kinds: uniqueKinds(kinds), counts, hasDefinitiveSsn };
+}
+
+/**
+ * Redaction kinds and counts for one message — the trace drawer's per-turn
+ * sanitize summary (trace-transparency.md: metadata only, never values).
+ */
+export function redactionSummary(message: ChatMessage): TraceRedaction[] {
+  const totals = new Map<PiiKind, number>();
+  for (const part of message.parts) {
+    for (const redaction of redactText(part.text).counts) {
+      totals.set(
+        redaction.kind,
+        (totals.get(redaction.kind) ?? 0) + redaction.count,
+      );
+    }
+  }
+  return [...totals.entries()].map(([kind, count]) => ({ kind, count }));
 }
 
 export function sanitizeMessages(messages: ChatMessage[]): SanitizeResult {

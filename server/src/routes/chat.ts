@@ -12,12 +12,14 @@ import {
   type ChatMessage,
   type CivicReachUIMessage,
   type ShortCircuitVerdict,
+  type TracePartData,
 } from '@civicreach/shared';
 import { respondGrounded } from '../agent/respond';
 import type { IncomeLimitsTable } from '../corpus/income-table';
 import { logError, logGuardrail } from '../log';
 import { runGuardrailPipeline } from '../middleware/pipeline';
 import type { VectorStore } from '../retrieval/store';
+import { traceForOutcome } from '../trace';
 
 function httpStatusFor(code: ApiErrorCode): number {
   switch (code) {
@@ -42,6 +44,8 @@ function streamTemplatedReply(
   options: {
     text: string;
     verdict?: ShortCircuitVerdict;
+    /** Per-turn glass-box trace — every response path carries one (v4). */
+    trace: TracePartData;
   },
 ): void {
   const textId = randomUUID();
@@ -53,6 +57,7 @@ function streamTemplatedReply(
           data: { verdict: options.verdict },
         });
       }
+      writer.write({ type: 'data-trace', data: options.trace });
       writer.write({ type: 'text-start', id: textId });
       writer.write({ type: 'text-delta', id: textId, delta: options.text });
       writer.write({ type: 'text-end', id: textId });
@@ -112,7 +117,10 @@ export function createChatRouter(grounding: {
             stage: 'fail_closed',
             latencyMs: outcome.resolved.latencyMs,
           });
-          streamTemplatedReply(res, { text: outcome.responseText });
+          streamTemplatedReply(res, {
+            text: outcome.responseText,
+            trace: traceForOutcome(outcome),
+          });
           return;
         }
         case 'short_circuit': {
@@ -127,6 +135,7 @@ export function createChatRouter(grounding: {
           streamTemplatedReply(res, {
             text: outcome.responseText,
             verdict: outcome.verdict,
+            trace: traceForOutcome(outcome),
           });
           return;
         }
@@ -147,6 +156,7 @@ export function createChatRouter(grounding: {
             sourceTurn: currentUserTurn(request.data.messages),
             sanitizedMessages: outcome.sanitizedMessages,
             sanitizedUserText: outcome.sanitizedUserText,
+            baseTrace: traceForOutcome(outcome),
           });
           return;
         }

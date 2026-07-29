@@ -5,15 +5,18 @@ import {
   type OutOfScopeKind,
   type PiiKind,
   type ShortCircuitVerdict,
+  type TraceRedaction,
 } from '@civicreach/shared';
 import { classifyInbound, type ResolvedGuardrail } from './classify';
-import { latestUserText, sanitizeMessages } from './sanitize';
+import { latestUserText, redactionSummary, sanitizeMessages } from './sanitize';
 
 export type PipelineOutcome =
   | {
       kind: 'proceed';
       sanitizedMessages: ChatMessage[];
       sanitizedUserText: string;
+      /** Stage 1 kinds/counts for the latest user turn (trace display only). */
+      latestTurnRedactions: TraceRedaction[];
       resolved: Extract<ResolvedGuardrail, { action: 'proceed' }>;
     }
   | {
@@ -25,6 +28,7 @@ export type PipelineOutcome =
       sanitizedUserText: string;
       sanitizedMessages: ChatMessage[];
       rawUserText: string;
+      latestTurnRedactions: TraceRedaction[];
       resolved: Extract<ResolvedGuardrail, { action: 'short_circuit' }>;
     }
   | {
@@ -32,20 +36,29 @@ export type PipelineOutcome =
       responseText: string;
       sanitizedUserText: string;
       sanitizedMessages: ChatMessage[];
+      latestTurnRedactions: TraceRedaction[];
       resolved: Extract<ResolvedGuardrail, { action: 'fail_closed' }>;
     };
 
-function rawLatestUserText(messages: ChatMessage[]): string {
+function latestUserMessage(messages: ChatMessage[]): ChatMessage | null {
   for (let i = messages.length - 1; i >= 0; i -= 1) {
     const message = messages[i];
     if (message?.role === 'user') {
-      return message.parts
-        .filter((part) => part.type === 'text')
-        .map((part) => part.text)
-        .join('\n');
+      return message;
     }
   }
-  return '';
+  return null;
+}
+
+function rawLatestUserText(messages: ChatMessage[]): string {
+  const message = latestUserMessage(messages);
+  if (!message) {
+    return '';
+  }
+  return message.parts
+    .filter((part) => part.type === 'text')
+    .map((part) => part.text)
+    .join('\n');
 }
 
 export async function runGuardrailPipeline(
@@ -54,6 +67,10 @@ export async function runGuardrailPipeline(
   const rawUserText = rawLatestUserText(messages);
   const sanitized = sanitizeMessages(messages);
   const sanitizedUserText = latestUserText(sanitized.messages);
+  const latestMessage = latestUserMessage(messages);
+  const latestTurnRedactions = latestMessage
+    ? redactionSummary(latestMessage)
+    : [];
   const resolved = await classifyInbound({
     sanitizedUserText,
     hasDefinitiveSsn: sanitized.hasDefinitiveSsn,
@@ -66,6 +83,7 @@ export async function runGuardrailPipeline(
         kind: 'proceed',
         sanitizedMessages: sanitized.messages,
         sanitizedUserText,
+        latestTurnRedactions,
         resolved,
       };
     case 'fail_closed':
@@ -74,6 +92,7 @@ export async function runGuardrailPipeline(
         responseText: FAIL_CLOSED_RESPONSE,
         sanitizedUserText,
         sanitizedMessages: sanitized.messages,
+        latestTurnRedactions,
         resolved,
       };
     case 'short_circuit':
@@ -90,6 +109,7 @@ export async function runGuardrailPipeline(
         sanitizedUserText,
         sanitizedMessages: sanitized.messages,
         rawUserText,
+        latestTurnRedactions,
         resolved,
       };
     default: {

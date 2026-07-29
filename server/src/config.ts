@@ -69,6 +69,22 @@ export const RETRIEVAL = {
   topK: 4,
 } as const;
 
+/**
+ * Published OpenAI prices for the pinned models, in USD per 1M tokens.
+ * Snapshotted 2026-07-29 from the OpenAI pricing page (short-context
+ * rates): gpt-5.6-terra $2.50 in / $15.00 out; gpt-5.4-nano $0.20 in /
+ * $1.25 out; text-embedding-3-small $0.02. Update when OpenAI reprices.
+ *
+ * These exist only for the trace drawer's running-cost display
+ * (decisions/trace-transparency.md): every dollar figure it shows is
+ * labeled an ESTIMATE — token counts are the durable fact.
+ */
+export const PRICING_USD_PER_1M_TOKENS = {
+  agent: { input: 2.5, output: 15 },
+  classifier: { input: 0.2, output: 1.25 },
+  embedding: { input: 0.02 },
+} as const;
+
 /** Validate and return env. Exits the process when required values are missing. */
 export function requireEnv(): Env {
   const parsedEnv = envSchema.safeParse(process.env);

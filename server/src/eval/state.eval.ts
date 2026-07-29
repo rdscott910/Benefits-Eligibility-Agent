@@ -65,7 +65,7 @@ async function agentTurn(options: {
     throw new Error('agentTurn requires a proceed verdict');
   }
 
-  const queryVector = await embedQuery(outcome.sanitizedUserText);
+  const { vector: queryVector } = await embedQuery(outcome.sanitizedUserText);
   const { hits } = retrieveAboveThreshold({
     store,
     queryVector,

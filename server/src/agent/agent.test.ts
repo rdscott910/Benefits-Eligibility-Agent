@@ -6,7 +6,11 @@
  * and retrievalPartFor status selection from final text + hits.
  */
 import { describe, expect, it } from 'vitest';
-import { NO_MATCH_SENTENCE, REFERRAL_LINE } from '@civicreach/shared';
+import {
+  NO_MATCH_SENTENCE,
+  REFERRAL_LINE,
+  retrievalPartDataSchema,
+} from '@civicreach/shared';
 import type { RetrievedHit } from '../retrieval/store';
 import { containsNoMatchSentence } from './no-match';
 import { buildSystemPrompt } from './prompt';
@@ -131,6 +135,22 @@ describe('retrieval part decision', () => {
       'income-limits#1',
       'deductions#2',
     ]);
+  });
+
+  it('carries the exact chunk content on citations and round-trips the schema (Slice 4 chips)', () => {
+    const part = retrievalPartFor({
+      finalText: 'For 3 people the limit is $4,442.',
+      hits: [hit('income-limits#1', 0.61)],
+      bestScore: 0.61,
+    });
+    const parsed = retrievalPartDataSchema.parse(part);
+    expect(parsed.status).toBe('grounded');
+    if (parsed.status !== 'grounded') return;
+    expect(parsed.citations[0]).toMatchObject({
+      heading: 'Section',
+      text: 'The limit is $4,442.',
+      score: 0.61,
+    });
   });
 
   it('reports conversational when there were no hits and no declaration', () => {

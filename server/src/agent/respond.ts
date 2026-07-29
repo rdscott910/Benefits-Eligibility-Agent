@@ -8,16 +8,20 @@ import {
   toUIMessageStream,
 } from 'ai';
 import type { Response } from 'express';
-import type {
-  CaseFile,
-  ChatMessage,
-  CivicReachUIMessage,
-  RetrievalPartData,
-  VerdictPartData,
+import {
+  tracePartDataSchema,
+  type CaseFile,
+  type ChatMessage,
+  type CivicReachUIMessage,
+  type RetrievalPartData,
+  type TracePartData,
+  type TraceTokenUsage,
+  type VerdictPartData,
 } from '@civicreach/shared';
 import { MODELS, RETRIEVAL } from '../config';
 import type { IncomeLimitsTable } from '../corpus/income-table';
 import { logError, logRetrieval } from '../log';
+import { estimateCostUsd } from '../trace';
 import {
   embedQuery,
   retrieveAboveThreshold,
@@ -65,6 +69,10 @@ export function retrievalPartFor(options: {
         citationId: hit.chunk.citationId,
         docId: hit.chunk.docId,
         title: hit.chunk.docTitle,
+        // The exact retrieved chunk rides along so the UI's clickable chips
+        // can reveal it without another round-trip (grounding-policy.md).
+        heading: hit.chunk.heading,
+        text: hit.chunk.text,
         score: hit.score,
       })),
     };
@@ -87,18 +95,27 @@ export async function respondGrounded(options: {
   sourceTurn: number;
   sanitizedMessages: ChatMessage[];
   sanitizedUserText: string;
+  /**
+   * Sanitize + guardrail trace sections from the pipeline outcome; this
+   * function completes the retrieval/agent/cost sections and writes the
+   * turn's `data-trace` part.
+   */
+  baseTrace: TracePartData;
 }): Promise<void> {
   const retrievalStarted = Date.now();
-  const queryVector = await embedQuery(options.sanitizedUserText);
+  const { vector: queryVector, tokens: embeddingTokens } = await embedQuery(
+    options.sanitizedUserText,
+  );
   const { hits, bestScore } = retrieveAboveThreshold({
     store: options.store,
     queryVector,
     topK: RETRIEVAL.topK,
     threshold: RETRIEVAL.threshold,
   });
+  const retrievalLatencyMs = Date.now() - retrievalStarted;
 
   logRetrieval({
-    latencyMs: Date.now() - retrievalStarted,
+    latencyMs: retrievalLatencyMs,
     hitCount: hits.length,
     bestScore,
     threshold: RETRIEVAL.threshold,
@@ -149,9 +166,20 @@ export async function respondGrounded(options: {
       // calls may sit between segments), so no-match detection runs over
       // all of it.
       let finalText = '';
+      // The agent DID run on this path; null token fields mean usage was
+      // unavailable (e.g. the stream failed), never that no call happened.
+      let agentTokens: TraceTokenUsage = {
+        inputTokens: null,
+        outputTokens: null,
+      };
       try {
         const steps = await result.steps;
         finalText = steps.map((step) => step.text).join('');
+        const totalUsage = await result.totalUsage;
+        agentTokens = {
+          inputTokens: totalUsage.inputTokens ?? null,
+          outputTokens: totalUsage.outputTokens ?? null,
+        };
       } catch {
         // The stream error was already surfaced to the client via onError;
         // fall through so the parts below report honestly (no citations,
@@ -171,6 +199,23 @@ export async function respondGrounded(options: {
       writer.write({
         type: 'data-casefile',
         data: { caseFile: holder.current },
+      });
+
+      // The turn's glass-box trace: pipeline sections as handed in, plus
+      // the proceed-path sections this function owns (trace-transparency.md).
+      writer.write({
+        type: 'data-trace',
+        data: tracePartDataSchema.parse({
+          sanitize: options.baseTrace.sanitize,
+          guardrail: options.baseTrace.guardrail,
+          retrieval: { latencyMs: retrievalLatencyMs, embeddingTokens },
+          agent: { tokens: agentTokens },
+          estimatedCostUsd: estimateCostUsd({
+            classifier: options.baseTrace.guardrail.tokens,
+            agent: agentTokens,
+            embeddingTokens,
+          }),
+        } satisfies TracePartData),
       });
     },
   });
