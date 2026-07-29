@@ -118,4 +118,20 @@
 - New unit tests: new/changed part schemas round-trip through Zod;
   redaction counting; cost estimation math.
 
+## Mid-proof fix (in scope, 2026-07-29)
+
+Running adversarial sections in strict script order on the fresh clone
+exposed a pre-existing defect: after E2 (injection+SSN — injection wins
+the verdict per settled precedence), the SSN-bearing user message stayed
+in client history because only pii-verdict messages were dropped. Stage 1
+sanitizes the FULL history each request and its definitive-SSN rule then
+forced every later clean turn (F1) into a PII rejection — the
+conversation could never recover, contradicting pii-handling.md's "the
+conversation survives the refusal". Fix is client-only and implements
+the decision's existing rule ("the rejected message is not stored in
+conversation state") completely: any short-circuited turn whose trace
+sanitize summary shows redactions drops the prior user message
+(`mustDropPriorUserMessage` in `client/src/App.tsx`). Guardrail
+middleware untouched. E2→F1 re-proven in sequence after the fix.
+
 ## Closed — (to be filled at gate verdict)

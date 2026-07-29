@@ -315,9 +315,11 @@ state), and Slice 4's transparency layer added exactly one:
 
 No conversation data is persisted anywhere. Refreshing the page clears the
 conversation and the CaseFile — session facts live in browser memory only,
-never on the server, never in localStorage. Rejected PII messages are dropped
-from the client transcript so the raw value is never re-sent, and PII
-short-circuits never reach the agent loop or the state tool, so rejected
-content cannot enter the CaseFile. The only file the server writes is the
+never on the server, never in localStorage. Any rejected message that
+contained detected PII is dropped from the client transcript so the raw
+value is never re-sent — including when a different guardrail class won the
+verdict (an injection+SSN collision resolves to injection, and the message
+is still dropped) — and PII short-circuits never reach the agent loop or
+the state tool, so rejected content cannot enter the CaseFile. The only file the server writes is the
 local embeddings cache (vectors of the public corpus text — never user
 input).

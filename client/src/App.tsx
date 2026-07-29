@@ -132,6 +132,28 @@ function caseFileFromMessage(message: CivicReachUIMessage): CaseFile | null {
   return latest;
 }
 
+/**
+ * Whether the user message before this guardrail reply must be dropped from
+ * local history (pii-handling.md: "the rejected message is not stored in
+ * conversation state"). True for every pii-verdict turn, and for any other
+ * short-circuit whose sanitize summary shows redactions — e.g. an
+ * injection+SSN collision, where injection wins the verdict but the message
+ * still carried an SSN. Without the drop, that message would be re-sent
+ * with every later request and Stage 1's definitive-SSN rule would keep
+ * rejecting clean follow-ups.
+ */
+function mustDropPriorUserMessage(message: CivicReachUIMessage): boolean {
+  const verdict = guardrailVerdict(message);
+  if (verdict === null) {
+    return false;
+  }
+  if (verdict === 'pii') {
+    return true;
+  }
+  const trace = traceOutcome(message);
+  return (trace?.sanitize.redactions.length ?? 0) > 0;
+}
+
 function dollars(amount: number): string {
   return `$${amount.toLocaleString('en-US')}`;
 }
@@ -756,7 +778,8 @@ export function App() {
     }
   }, [messages]);
 
-  // Rejected PII messages must not stay in local history (pii-handling.md).
+  // Rejected messages that contained detected PII must not stay in local
+  // history (pii-handling.md) — see mustDropPriorUserMessage.
   useEffect(() => {
     if (status !== 'ready') {
       return;
@@ -767,7 +790,7 @@ export function App() {
       if (!message || message.role !== 'assistant') {
         continue;
       }
-      if (guardrailVerdict(message) !== 'pii') {
+      if (!mustDropPriorUserMessage(message)) {
         continue;
       }
 

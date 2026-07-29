@@ -230,9 +230,17 @@ verified it. Update this file in the same slice that changes behavior.
   figure it shows is an estimate from dated pinned prices — token
   counts are the durable fact.
 - Nothing persisted server-side; refresh clears the transcript AND the
-  CaseFile (browser memory only, stated in the UI strip and README).
-  Rejected PII user messages are dropped from client state so they are
-  not re-sent, and PII short-circuits never reach the agent loop or the
-  `updateCaseFile` tool, so rejected content cannot enter state. The
-  only file written is the gitignored embeddings cache (public corpus
-  vectors, never user input).
+  CaseFile (browser memory only, stated in the UI panel and README).
+  Any short-circuited user message that contained detected PII is
+  dropped from client state so it is never re-sent — pii-verdict turns
+  and collisions where another class won (e.g. injection+SSN) alike;
+  the trace part's sanitize summary is what tells the client a
+  redaction occurred (Slice 4 mid-proof fix, 2026-07-29: previously
+  only pii-verdict messages were dropped, so an injection+SSN message
+  lingered in history and Stage 1's definitive-SSN rule rejected every
+  later clean turn — adversarial E2→F1 in sequence now passes;
+  evidence: `client/src/App.tsx` `mustDropPriorUserMessage`). PII
+  short-circuits never reach the agent loop or the `updateCaseFile`
+  tool, so rejected content cannot enter state. The only file written
+  is the gitignored embeddings cache (public corpus vectors, never
+  user input).
