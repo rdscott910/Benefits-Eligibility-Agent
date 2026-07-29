@@ -52,7 +52,7 @@ authority — see the scope-revision log rules at the bottom.
   and an out-of-corpus question gets "I don't have that in my documents"
   plus the official referral.
 
-## Slice 3 — Deterministic tools + multi-turn state — NOT STARTED
+## Slice 3 — Deterministic tools + multi-turn state — GATE PASSED 2026-07-29
 
 - Intent: tool results, not model math, drive the likelihood verdict, and
   stated facts are never re-asked.
