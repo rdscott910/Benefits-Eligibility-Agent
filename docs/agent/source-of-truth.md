@@ -147,6 +147,72 @@ verified it. Update this file in the same slice that changes behavior.
   `server/src/log.ts` (`logTool`), tool executors; verified by: dev-log
   inspection during the 2026-07-29 live run (e.g.
   `{"type":"tool","tool":"checkIncomeThreshold","outcome":"ok:likely_qualify"}`).
+- Envelope v4: every response path — proceed, guardrail short-circuit,
+  and fail-closed — emits a per-turn `data-trace` part built only from
+  metadata the pipeline already computed (sanitize kinds/counts,
+  resolved verdict + deciding source + latency + classifier tokens,
+  retrieval latency + embedding tokens, agent token usage, estimated
+  cost) — evidence: `shared/src/trace.ts`, `shared/src/envelope.ts`,
+  `server/src/trace.ts` (`traceForOutcome`), `server/src/routes/chat.ts`,
+  `server/src/agent/respond.ts`; verified by: `npm test` trace suite +
+  raw-stream probes 2026-07-29 (proceed, crisis fast-path, and PII turns
+  each carried a schema-valid `data-trace`).
+- Streaming tool-status labels render from the AI SDK's typed
+  `tool-<name>` parts — a label can only appear for a real invocation,
+  never from model text, and shows a running state while the call is in
+  flight — evidence: `client/src/App.tsx` (`ToolStatusStrip`,
+  `TOOL_STATUS_LABELS`), `shared/src/tools.ts` (`CivicReachUITools`);
+  verified by: browser MutationObserver log 2026-07-29 ("Updating your
+  case file…" and "Checking NC FNS income limits…" observed in running
+  state, flipping to done when the tool output part arrived) —
+  live-review §2 item 2's visible-tool-status clause.
+- Clickable citation chips: citations carry the chunk's heading and
+  exact markdown text, and clicking a chip opens the chunk with its
+  cosine score inline — evidence: `shared/src/grounding.ts`
+  (`citationSchema`), `server/src/agent/respond.ts` (`retrievalPartFor`),
+  `client/src/App.tsx` (`CitationDetail`); verified by: live browser
+  2026-07-29 (income-limits#1 opened to the exact corpus section, score
+  0.297, its pipe table rendered) — live-review §5 item 4; `npm test`
+  schema round-trip.
+- Per-turn glass-box trace drawer on every assistant turn, following
+  `decisions/trace-transparency.md`: sanitize shown metadata-only
+  ("redacted: ssn ×1", never a value), classifier verdict + latency +
+  tokens, retrieval matches with scores (or an honest "not run" on
+  short-circuits), tool calls with their real Zod-parsed inputs/outputs,
+  and per-turn + running-session cost — evidence: `client/src/App.tsx`
+  (`TraceDrawer`), `docs/agent/decisions/trace-transparency.md`; verified
+  by: live browser 2026-07-29 — proceed drawer showed all five sections
+  with real values; crisis drawer showed fast-path verdict, no model
+  call, retrieval/tools not run, $0; PII drawer showed `ssn ×1` with the
+  raw value absent from the entire page — live-review §5 item 3.
+- Running-cost display: token counts are per-model facts from API usage;
+  the dollar figure is an estimate from per-1M-token prices pinned with a
+  dated comment (2026-07-29), and the UI labels it an estimate; session
+  totals are summed client-side and die on refresh — evidence:
+  `server/src/config.ts` (`PRICING_USD_PER_1M_TOKENS`),
+  `server/src/trace.ts` (`estimateCostUsd`), `client/src/App.tsx`
+  (`totalsFromTraces`); verified by: `npm test` cost-math cases + live
+  browser cost section accumulating across four turns.
+- GFM table rendering with agent prompt v5: `remark-gfm` renders tables
+  in replies and in citation-chip chunk details, and prompt v5 lifts the
+  v4 "do not write pipe tables" STYLE rule in the same change —
+  evidence: `client/src/App.tsx` (`ChatMarkdown`),
+  `server/src/agent/prompt.ts` (v5); verified by: live browser
+  2026-07-29 (corpus limits table rendered as a real table inside a
+  chip) + `npm run eval` fully green on prompt v5.
+- "What I know so far" panel shows each stored fact's value AND status
+  (stated / needs confirmation / confirmed) with the session-only
+  notice, and an honest empty state — evidence: `client/src/App.tsx`
+  (`CaseFilePanel`); verified by: live browser 2026-07-29 (both facts
+  listed with status chips; panel intact after a crisis pause and a PII
+  rejection).
+- Tool I/O schemas are cross-boundary contracts in
+  `shared/src/tools.ts` (client Zod-parses tool payloads before
+  rendering them); executors stay one-file-per-tool in
+  `server/src/tools/` — evidence: `shared/src/tools.ts`,
+  `server/src/tools/*.ts`, dated note in
+  `decisions/deterministic-math.md`; verified by: `npm run typecheck`
+  all workspaces + `npm test` tools suite unchanged.
 
 ## Verified non-capabilities (honest gaps worth naming)
 
@@ -159,10 +225,10 @@ verified it. Update this file in the same slice that changes behavior.
   (roadmap scopes exactly the income-threshold and household-size
   tools). The 100% net limit is displayed as published, never computed
   against.
-- No tool-status streaming display, no glass-box trace drawer, no
-  clickable citation chips (chunk + score inspection), and no GFM table
-  rendering in the client — the agent prompt avoids pipe tables instead
-  (Slice 4).
+- The trace drawer's sanitize summary covers the latest user turn only
+  (each earlier turn already carries its own trace), and the dollar
+  figure it shows is an estimate from dated pinned prices — token
+  counts are the durable fact.
 - Nothing persisted server-side; refresh clears the transcript AND the
   CaseFile (browser memory only, stated in the UI strip and README).
   Rejected PII user messages are dropped from client state so they are

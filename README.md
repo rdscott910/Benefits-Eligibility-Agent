@@ -3,20 +3,25 @@
 A text-based agent that helps North Carolina residents assess how likely they
 are to qualify for NC FNS (SNAP) food assistance.
 
-**This repository is at Slice 3.** What exists today is the streaming skeleton,
-pre-flight guardrail middleware (crisis, injection, PII, out-of-scope),
-grounded retrieval — every benefit figure in an answer comes from six snapshot
-documents in `server/corpus/`, with citations shown in the UI, and questions
-those documents cannot answer get an honest "I don't have that in my
-documents" plus the official ePASS/DSS referral — and, new in Slice 3,
-deterministic eligibility math with session memory: facts you state (income,
-household size, county) are remembered for the session and never re-asked,
-all arithmetic runs in Zod-schema tools that read the corpus-parsed limits
-table (the model never computes), and the likelihood verdict is rendered by
-the interface from fixed mandatory language, never authored by the model.
-There is still no tool-status streaming display or glass-box trace UI. The
-app says so on screen, and this README says so here, on purpose — see
-[What works today](#what-works-today).
+**This repository is complete through Slice 4, the final slice.** What exists
+is the streaming skeleton, pre-flight guardrail middleware (crisis,
+injection, PII, out-of-scope), grounded retrieval — every benefit figure in
+an answer comes from six snapshot documents in `server/corpus/`, with
+citations shown in the UI, and questions those documents cannot answer get an
+honest "I don't have that in my documents" plus the official ePASS/DSS
+referral — deterministic eligibility math with session memory: facts you
+state (income, household size, county) are remembered for the session and
+never re-asked, all arithmetic runs in Zod-schema tools that read the
+corpus-parsed limits table (the model never computes), and the likelihood
+verdict is rendered by the interface from fixed mandatory language, never
+authored by the model — and, new in Slice 4, a transparency layer: tool
+calls are visibly labeled while they stream, every source chip clicks open
+to the exact corpus chunk and its retrieval score, and every turn carries a
+glass-box trace drawer showing what the pipeline actually did (sanitize
+result, classifier verdict and latency, retrieval matches with scores, tool
+calls with real inputs and outputs, and the running conversation cost). See
+[What works today](#what-works-today) and
+[Deliberate tradeoffs](#deliberate-tradeoffs-what-this-tool-refuses-to-do).
 
 ## Run it
 
@@ -49,7 +54,7 @@ no fallback numbers anywhere in the code.
 | Capability | Status |
 | --- | --- |
 | Streaming chat with a model | Works |
-| Markdown rendering of replies | Works |
+| Markdown rendering of replies, including GFM tables | Works |
 | Typed request/response envelope, validated at the boundary | Works |
 | Guardrails (crisis, injection, PII, out-of-scope) | Works |
 | Grounded NC FNS answers with citations from a six-document corpus | Works |
@@ -57,19 +62,83 @@ no fallback numbers anywhere in the code.
 | Deterministic income-threshold check and limits lookup (Zod tools, corpus-parsed table) | Works |
 | Likelihood verdict rendered from fixed mandatory language (three tiers + NC DSS suffix + referral) | Works |
 | Session memory of stated facts (income, household size, county) — never re-asked, corrections and contradictions handled | Works |
-| Tool-status streaming display and glass-box trace drawer | Not built |
+| Live tool-status labels ("Checking NC FNS income limits…") from typed stream parts, never model text | Works |
+| Clickable citation chips — the exact corpus chunk and its retrieval score | Works |
+| Per-turn glass-box trace drawer (sanitize, classifier, retrieval, tool I/O, running cost) | Works |
+| "What I know so far" panel with each fact's value and status | Works |
 
 Grounded answers quote published figures verbatim and show which corpus
-chunks they came from (source chips with the retrieval score). The comparison
-against those limits runs in deterministic tools: the model stores your facts
-via a `updateCaseFile` tool, a threshold tool reads only settled facts from
-that state (it refuses to run on a guess or an unresolved contradiction), and
-the tier it selects is displayed by the interface with the mandatory "only NC
-DSS can determine eligibility" wording. Facts live in browser memory for the
-session only — refreshing clears them, and the UI says so. The build order
-and its gates live in [`docs/agent/roadmap.md`](docs/agent/roadmap.md); what
-is actually proven to work is tracked in
+chunks they came from — click any source chip and the exact chunk opens
+inline with its cosine score, so the tie-out from answer to document is one
+click. The comparison against those limits runs in deterministic tools: the
+model stores your facts via a `updateCaseFile` tool, a threshold tool reads
+only settled facts from that state (it refuses to run on a guess or an
+unresolved contradiction), and the tier it selects is displayed by the
+interface with the mandatory "only NC DSS can determine eligibility"
+wording. While a tool runs, the interface shows a status label derived from
+the typed tool part itself — a label can only appear when a real invocation
+streamed. Facts live in browser memory for the session only — refreshing
+clears them, and the UI says so. The build order and its gates live in
+[`docs/agent/roadmap.md`](docs/agent/roadmap.md); what is actually proven to
+work is tracked in
 [`docs/agent/source-of-truth.md`](docs/agent/source-of-truth.md).
+
+### The glass box
+
+Every assistant turn — guardrail short-circuits included — ends with a
+collapsible "Glass box" drawer rendered from a typed `data-trace` stream
+part. It shows exactly what the pipeline did on that turn and nothing more:
+
+- **Stage 1 sanitize** — which PII kinds were redacted and how many of each
+  (e.g. "redacted: ssn ×1"). Kinds and counts only; the values themselves
+  are discarded and appear nowhere, the drawer included.
+- **Stage 2 classify** — the resolved verdict, what decided it (classifier
+  model or a deterministic fast-path), its latency, and its token usage.
+- **Retrieval** — embedding/scoring latency and every match with its cosine
+  score, or an honest "not run" on guardrail short-circuit turns.
+- **Tool calls** — each deterministic tool invocation with its real
+  Zod-validated input and output (your own stated facts, in your own
+  browser), never a paraphrase.
+- **Cost** — per-turn token counts per model call, plus a running session
+  total and a dollar figure clearly labeled an estimate, computed from
+  prices pinned with a dated comment in `server/src/config.ts`. Totals are
+  summed in the browser and vanish on refresh, like everything else.
+
+The drawer displays only metadata the pipeline actually produced
+([`docs/agent/decisions/trace-transparency.md`](docs/agent/decisions/trace-transparency.md));
+server logs are unchanged and still never contain message content or fact
+values.
+
+## Deliberate tradeoffs (what this tool refuses to do)
+
+Four capabilities are excluded on purpose and defended as tradeoffs, not
+gaps ([`docs/agent/decisions/out-of-scope-tradeoffs.md`](docs/agent/decisions/out-of-scope-tradeoffs.md)).
+Re-admitting any of them requires a dated scope-revision entry in the
+roadmap:
+
+1. **No external databases.** The corpus is six files; an in-memory vector
+   store loads in milliseconds and keeps the entire setup at
+   `npm install && npm run dev`. A hosted database would add setup friction
+   and a failure mode while making the two-minute fresh-clone rule
+   impossible to defend — for zero retrieval-quality gain at this scale.
+2. **No real agency submissions and no live-government scraping.** The
+   product brief forbids it outright: this agent estimates likelihood and
+   refers people to ePASS (epass.nc.gov) or their county DSS. Submitting an
+   application on a user's behalf, or scraping live government sites at
+   answer time, adds legal and correctness risk a proof-of-concept must not
+   carry — a stale scrape that quotes a wrong limit is exactly the failure
+   this design exists to prevent. The corpus is dated snapshots, reviewed
+   and committed, and nothing is fetched live.
+3. **No voice.** Text-first serves the messy-input use case the brief
+   centers on — hedged numbers, corrections, contradictions — without
+   stacking speech-recognition error modes on top of an already
+   safety-critical pipeline. A misheard income figure that flows into an
+   eligibility estimate is a harm, not a feature.
+4. **No accounts and no persistence beyond browser memory.** No login, no
+   server-side storage, no localStorage: benefit data at rest on a shared
+   or library computer is a real risk for exactly this population, so
+   privacy is the feature. Refreshing the page clears the conversation and
+   the case file, and the UI says so rather than hiding it.
 
 ## The grounded corpus
 
@@ -136,26 +205,34 @@ reaches the pipeline. A valid body then:
    clarifying question), `lookupIncomeLimits` (published limits from the
    parsed table), and `checkIncomeThreshold` (reads only settled facts from
    the CaseFile — it refuses to run on a guess — and selects the likelihood
-   tier).
+   tier). Each tool invocation streams to the browser as a typed
+   `tool-<name>` part, which is what the live status labels and the
+   drawer's tool I/O render from.
 5. **Typed parts after the text** — the server emits one `data-retrieval`
-   part (`grounded` with citation ids and scores, `no_match` with the
-   UI-rendered official referral, or `conversational`), a `data-verdict`
-   part when the threshold tool ran (the UI renders the tier phrase, the
-   "only NC DSS can determine eligibility" suffix, and the ePASS/DSS
-   referral from `shared/` constants — the model never authors them), and a
-   `data-casefile` part carrying the post-turn state, which the browser
-   stores and sends with the next request.
+   part (`grounded` with citations that carry the id, score, AND the exact
+   chunk text the chips reveal; `no_match` with the UI-rendered official
+   referral; or `conversational`), a `data-verdict` part when the threshold
+   tool ran (the UI renders the tier phrase, the "only NC DSS can determine
+   eligibility" suffix, and the ePASS/DSS referral from `shared/` constants
+   — the model never authors them), a `data-casefile` part carrying the
+   post-turn state, which the browser stores and sends with the next
+   request, and a `data-trace` part carrying the turn's glass-box metadata.
+   Guardrail short-circuits emit a `data-trace` too — theirs honestly says
+   retrieval, tools, and the agent never ran.
 
 Classifier failure fails closed: a safe "please try again" refusal, never
 unclassified input reaching the agent. Guardrail short-circuits never invoke
 retrieval, the agent, or the tools — which is also why facts survive a crisis
 pause untouched. Logs carry verdicts, scores, tool outcomes, and timings
-only — never message content or fact values.
+only — never message content or fact values (the drawer is a client-side
+display of your own session, not a log).
 
-The envelope is versioned (`ENVELOPE_VERSION`, currently `3`). v1 added typed
-guardrail parts; v2 added the typed retrieval/citation part; v3 adds the
-request-side CaseFile and the `data-verdict` / `data-casefile` parts. Tool
-status display arrives with Slice 4.
+The envelope is versioned (`ENVELOPE_VERSION`, currently `4`). v1 added typed
+guardrail parts; v2 added the typed retrieval/citation part; v3 added the
+request-side CaseFile and the `data-verdict` / `data-casefile` parts; v4
+adds the per-turn `data-trace` part, chunk text on citations, and typed tool
+parts — every schema still defined once in `shared/` and imported by both
+sides.
 
 ### Configuration
 
@@ -167,7 +244,8 @@ both sides stay in sync.
 Model ids are pinned in one place, `server/src/config.ts`: the agent model,
 the classifier model (`gpt-5.4-nano`), and the embedding model
 (`text-embedding-3-small`), next to the retrieval threshold and its
-calibration notes.
+calibration notes and the per-1M-token prices (dated 2026-07-29) that feed
+the drawer's cost estimate.
 
 ### Scripts
 
@@ -195,10 +273,10 @@ Regenerated with `npm run eval`.
 | Classifier model | `gpt-5.4-nano` |
 | Classifier prompt version | 3 |
 | Agent model | `gpt-5.6-terra` |
-| Agent prompt version | 4 |
+| Agent prompt version | 5 |
 | Embedding model | `text-embedding-3-small` |
 | Retrieval threshold | 0.28 (top 4) |
-| Envelope version | 3 |
+| Envelope version | 4 |
 
 | Attack / behavior class | Result |
 | --- | --- |
@@ -218,10 +296,10 @@ Regenerated with `npm run eval`.
 ## Dependencies
 
 Deliberately small, so every entry is explainable — Slice 2's retrieval and
-Slice 3's tools + state both added zero new dependencies (tool calling,
+Slice 3's tools + state added zero new dependencies (tool calling,
 embeddings, and cosine similarity come from the AI SDK already listed; the
 vector store is a plain in-memory array; the CaseFile is plain browser
-state):
+state), and Slice 4's transparency layer added exactly one:
 
 - `ai`, `@ai-sdk/openai`, `@ai-sdk/react` — the Vercel AI SDK: model calls,
   tool calling, embeddings, streaming protocol, structured classifier output,
@@ -229,6 +307,8 @@ state):
 - `express` — the HTTP layer; keeps the guardrail-before-agent path visible
 - `zod` — schema validation at every boundary
 - `react`, `react-dom`, `react-markdown` — the UI and markdown rendering
+- `remark-gfm` — GFM table rendering for `react-markdown` (Slice 4 markdown
+  polish; the corpus's own limit tables render inside citation chips)
 - `vitest` — offline unit tests and the live adversarial + grounding suites
 - `vite`, `@vitejs/plugin-react`, `tsx`, `typescript`, `concurrently` — dev
   tooling only

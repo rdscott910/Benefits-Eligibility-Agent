@@ -194,7 +194,29 @@ safety at demo time, not which is more capable.
   traffic — acceptable and defensible for a live demo; the alternative
   breaks the integrity layer. (`classifier-design.md`)
 
-## 13. Process: gated slices, one at a time
+## 13. Transparency: a glass box, not a marketing claim
+
+- **Chose:** every assistant turn — guardrail short-circuits included —
+  carries a typed trace the UI renders as a per-turn drawer: sanitize
+  result as kinds and counts only ("redacted: ssn ×1", never a value),
+  classifier verdict + latency + tokens, retrieval matches with scores,
+  tool calls with their real Zod-validated inputs and outputs, and a
+  running conversation cost (token counts plus a dollar figure labeled
+  an estimate, from prices pinned with a dated comment). Tool-status
+  labels while streaming come from the typed tool parts themselves, and
+  citation chips click open to the exact corpus chunk and score.
+- **Why:** the integrity layer is only credible if a reviewer can see it
+  operating. A drawer that shows the real pipeline — including "not
+  run" on a crisis turn and a redaction the user can verify — turns
+  every claim in this document into something checkable in the demo.
+- **Tradeoff:** the drawer shows less than it could — no message text,
+  no redacted values, nothing the pipeline didn't actually produce. A
+  drawer that honestly shows less beats one that fabricates detail; and
+  dollar costs will drift as providers reprice, which is why tokens are
+  the durable fact and the dollars say "estimate."
+  (`trace-transparency.md`)
+
+## 14. Process: gated slices, one at a time
 
 - **Chose:** five roadmap slices (skeleton → guardrails → RAG → tools +
   state → transparency + proof), each with an explicit gate; the next

@@ -26,19 +26,24 @@ the roadmap's scope-revision log.
 
 ## Current status
 
-- Active slice: none. Slice 4 (Transparency UX + proof hardening) is
-  next.
+- Active slice: Slice 4 (Transparency UX + proof hardening) — the FINAL
+  slice. Implementation complete 2026-07-29; the fresh-clone gate run
+  (live-review §1–§6 end to end) is pending. After its gate verdict the
+  roadmap ends: there is no Slice 5, only the live review itself.
 - Built so far: Slice 0 shell, Slice 1 guardrails, Slice 2 grounded RAG,
-  Slice 3 deterministic tools + multi-turn state — three Zod tools in
-  `server/src/tools/` consuming the boot-parsed income-limits table
-  (`lookupIncomeLimits`, CaseFile-gated `checkIncomeThreshold`,
-  `updateCaseFile` as the only state mutation path), session CaseFile in
-  browser memory traveling with each request (envelope v3), likelihood
-  verdicts as structured `data-verdict` parts rendered from `shared/`
-  constants (tier + suffix + ePASS/DSS referral), KNOWN FACTS injected
-  into agent prompt v4 so stated facts are never re-asked (including
-  across a crisis pause). No tool-status streaming display, glass-box
-  drawer, clickable chips, or GFM rendering yet (Slice 4).
+  Slice 3 deterministic tools + multi-turn state — three Zod tools
+  consuming the boot-parsed income-limits table (`lookupIncomeLimits`,
+  CaseFile-gated `checkIncomeThreshold`, `updateCaseFile` as the only
+  state mutation path), session CaseFile in browser memory traveling
+  with each request, likelihood verdicts as structured `data-verdict`
+  parts rendered from `shared/` constants, KNOWN FACTS injected into the
+  agent prompt so stated facts are never re-asked — and Slice 4
+  transparency (envelope v4, agent prompt v5): per-turn `data-trace`
+  glass-box drawer on every response path, tool-status labels from typed
+  tool parts, clickable citation chips revealing the exact chunk +
+  score, GFM tables, the "What I know so far" panel with fact statuses,
+  README tradeoffs section, and pinned pricing for the cost estimate
+  (`decisions/trace-transparency.md`).
 - Last gate passed: Slice 3, 2026-07-29 — live-review §2 items 2–5
   (memory check answered without re-asking; math tie-out reproduced by
   hand: household of 3, $2,000 ≤ $2,888 at 130% → "you likely qualify")
@@ -60,10 +65,12 @@ Update this section when a slice starts, passes its gate, or is blocked.
   mandatory-language constants — defined once, imported by both sides).
 - Deterministic tools live in `server/src/tools/` (path clarified
   2026-07-29 in `decisions/deterministic-math.md` — the server build
-  typechecks `src` only), one file per tool, Zod input/output schemas
-  colocated. Threshold constants are parsed from corpus markdown at boot
-  into a Zod-validated table; if parsing fails, the server refuses to
-  boot — no hardcoded fallback numbers.
+  typechecks `src` only), one file per tool. Since Slice 4 the tool I/O
+  Zod schemas live in `shared/src/tools.ts` (the client renders tool
+  I/O, making it a cross-boundary contract; dated note in the same
+  decision doc). Threshold constants are parsed from corpus markdown at
+  boot into a Zod-validated table; if parsing fails, the server refuses
+  to boot — no hardcoded fallback numbers.
 - Corpus lives in `server/corpus/` as dated markdown snapshots with
   citation ids; the in-memory vector store is built from it at startup
   (embeddings cached gitignored, keyed by content hash). No live
@@ -72,9 +79,10 @@ Update this section when a slice starts, passes its gate, or is blocked.
   payloads, conversation state.
 - Streaming: every response path — guardrail short-circuits included —
   emits the same Vercel AI SDK stream envelope with typed parts
-  (guardrail verdict, verdict block, CaseFile update, tool status). The
-  UI renders tool status (e.g. "Checking NC FNS income limits…") and
-  guardrail badges from parts, never from model text.
+  (guardrail verdict, verdict block, CaseFile update, per-turn trace,
+  typed tool parts). The UI renders tool status (e.g. "Checking NC FNS
+  income limits…"), guardrail badges, and the glass-box drawer from
+  parts, never from model text.
 
 ## Known Policy Exceptions
 
