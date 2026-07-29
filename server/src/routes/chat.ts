@@ -1,11 +1,7 @@
 import { randomUUID } from 'node:crypto';
-import { openai } from '@ai-sdk/openai';
 import {
-  convertToModelMessages,
   createUIMessageStream,
   pipeUIMessageStreamToResponse,
-  streamText,
-  toUIMessageStream,
 } from 'ai';
 import { Router, type Response } from 'express';
 import {
@@ -16,9 +12,10 @@ import {
   type CivicReachUIMessage,
   type ShortCircuitVerdict,
 } from '@civicreach/shared';
-import { MODELS } from '../config';
+import { respondGrounded } from '../agent/respond';
 import { logError, logGuardrail } from '../log';
 import { runGuardrailPipeline } from '../middleware/pipeline';
+import type { VectorStore } from '../retrieval/store';
 
 function httpStatusFor(code: ApiErrorCode): number {
   switch (code) {
@@ -66,86 +63,86 @@ function streamTemplatedReply(
   });
 }
 
-export const chatRouter = Router();
+/**
+ * The chat route needs the boot-built vector store, so it is a factory:
+ * `index.ts` builds the corpus store first (fail-fast) and wires it in.
+ * Guardrail short-circuits never touch the store — retrieval runs only on
+ * the `proceed` path.
+ */
+export function createChatRouter(store: VectorStore): Router {
+  const chatRouter = Router();
 
-chatRouter.post('/chat', async (req, res) => {
-  const request = chatRequestSchema.safeParse(req.body);
+  chatRouter.post('/chat', async (req, res) => {
+    const request = chatRequestSchema.safeParse(req.body);
 
-  if (!request.success) {
-    sendError(
-      res,
-      'invalid_request',
-      `Body does not match chat envelope v${ENVELOPE_VERSION}: ${request.error.issues
-        .map((issue) => `${issue.path.join('.') || 'body'} ${issue.message}`)
-        .join('; ')}`,
-    );
-    return;
-  }
+    if (!request.success) {
+      sendError(
+        res,
+        'invalid_request',
+        `Body does not match chat envelope v${ENVELOPE_VERSION}: ${request.error.issues
+          .map((issue) => `${issue.path.join('.') || 'body'} ${issue.message}`)
+          .join('; ')}`,
+      );
+      return;
+    }
 
-  try {
-    const outcome = await runGuardrailPipeline(request.data.messages);
+    try {
+      const outcome = await runGuardrailPipeline(request.data.messages);
 
-    switch (outcome.kind) {
-      case 'fail_closed': {
-        logGuardrail({
-          stage: 'fail_closed',
-          latencyMs: outcome.resolved.latencyMs,
-        });
-        streamTemplatedReply(res, { text: outcome.responseText });
-        return;
+      switch (outcome.kind) {
+        case 'fail_closed': {
+          logGuardrail({
+            stage: 'fail_closed',
+            latencyMs: outcome.resolved.latencyMs,
+          });
+          streamTemplatedReply(res, { text: outcome.responseText });
+          return;
+        }
+        case 'short_circuit': {
+          logGuardrail({
+            stage: 'short_circuit',
+            verdict: outcome.verdict,
+            outOfScopeKind: outcome.outOfScopeKind,
+            piiKind: outcome.piiKind,
+            latencyMs: outcome.resolved.latencyMs,
+            source: outcome.resolved.source,
+          });
+          streamTemplatedReply(res, {
+            text: outcome.responseText,
+            verdict: outcome.verdict,
+          });
+          return;
+        }
+        case 'proceed': {
+          logGuardrail({
+            stage: 'agent',
+            verdict: 'proceed',
+            latencyMs: outcome.resolved.latencyMs,
+            inputTokens: outcome.resolved.inputTokens,
+            outputTokens: outcome.resolved.outputTokens,
+          });
+
+          await respondGrounded({
+            res,
+            store,
+            sanitizedMessages: outcome.sanitizedMessages,
+            sanitizedUserText: outcome.sanitizedUserText,
+          });
+          return;
+        }
+        default: {
+          const unhandled: never = outcome;
+          throw new Error(`Unhandled pipeline outcome: ${String(unhandled)}`);
+        }
       }
-      case 'short_circuit': {
-        logGuardrail({
-          stage: 'short_circuit',
-          verdict: outcome.verdict,
-          outOfScopeKind: outcome.outOfScopeKind,
-          piiKind: outcome.piiKind,
-          latencyMs: outcome.resolved.latencyMs,
-          source: outcome.resolved.source,
-        });
-        streamTemplatedReply(res, {
-          text: outcome.responseText,
-          verdict: outcome.verdict,
-        });
-        return;
-      }
-      case 'proceed': {
-        logGuardrail({
-          stage: 'agent',
-          verdict: 'proceed',
-          latencyMs: outcome.resolved.latencyMs,
-          inputTokens: outcome.resolved.inputTokens,
-          outputTokens: outcome.resolved.outputTokens,
-        });
+    } catch (error) {
+      logError('chat', error);
 
-        // No system instructions yet: proceed stays the plain Slice 0 shell.
-        const result = streamText({
-          model: openai(MODELS.agent),
-          messages: await convertToModelMessages(outcome.sanitizedMessages),
-        });
-
-        await pipeUIMessageStreamToResponse({
-          response: res,
-          stream: toUIMessageStream({
-            stream: result.stream,
-            onError: (error) => {
-              logError('agent_stream', error);
-              return 'The model call failed.';
-            },
-          }),
-        });
-        return;
-      }
-      default: {
-        const unhandled: never = outcome;
-        throw new Error(`Unhandled pipeline outcome: ${String(unhandled)}`);
+      if (!res.headersSent) {
+        sendError(res, 'internal_error', 'The request could not be completed.');
       }
     }
-  } catch (error) {
-    logError('chat', error);
+  });
 
-    if (!res.headersSent) {
-      sendError(res, 'internal_error', 'The request could not be completed.');
-    }
-  }
-});
+  return chatRouter;
+}
