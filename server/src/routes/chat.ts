@@ -9,10 +9,12 @@ import {
   chatRequestSchema,
   type ApiError,
   type ApiErrorCode,
+  type ChatMessage,
   type CivicReachUIMessage,
   type ShortCircuitVerdict,
 } from '@civicreach/shared';
 import { respondGrounded } from '../agent/respond';
+import type { IncomeLimitsTable } from '../corpus/income-table';
 import { logError, logGuardrail } from '../log';
 import { runGuardrailPipeline } from '../middleware/pipeline';
 import type { VectorStore } from '../retrieval/store';
@@ -63,13 +65,28 @@ function streamTemplatedReply(
   });
 }
 
+/** 1-based index of the current user turn (facts carry this as provenance). */
+function currentUserTurn(messages: ChatMessage[]): number {
+  return Math.max(
+    1,
+    messages.filter((message) => message.role === 'user').length,
+  );
+}
+
 /**
- * The chat route needs the boot-built vector store, so it is a factory:
- * `index.ts` builds the corpus store first (fail-fast) and wires it in.
- * Guardrail short-circuits never touch the store — retrieval runs only on
- * the `proceed` path.
+ * The chat route needs the boot-built vector store and the parsed
+ * income-limits table (the tools' only source of figures), so it is 
+ * written as a factory function so the entry point can build those 
+ * dependencies first (fail-fast) and wires them in:
+ * 
+ * `index.ts` builds both first (fail-fast) and wires them in.
+ * Guardrail short-circuits never touch the store, the tools, or the
+ * CaseFile — those run only on the `proceed` path.
  */
-export function createChatRouter(store: VectorStore): Router {
+export function createChatRouter(grounding: {
+  store: VectorStore;
+  incomeTable: IncomeLimitsTable;
+}): Router {
   const chatRouter = Router();
 
   chatRouter.post('/chat', async (req, res) => {
@@ -124,7 +141,10 @@ export function createChatRouter(store: VectorStore): Router {
 
           await respondGrounded({
             res,
-            store,
+            store: grounding.store,
+            incomeTable: grounding.incomeTable,
+            caseFile: request.data.caseFile ?? {},
+            sourceTurn: currentUserTurn(request.data.messages),
             sanitizedMessages: outcome.sanitizedMessages,
             sanitizedUserText: outcome.sanitizedUserText,
           });

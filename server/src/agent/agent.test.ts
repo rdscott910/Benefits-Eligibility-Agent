@@ -58,26 +58,52 @@ describe('no-match sentence detector', () => {
 
 describe('system prompt builder', () => {
   it('embeds the mandatory no-match sentence verbatim', () => {
-    expect(buildSystemPrompt([])).toContain(`"${NO_MATCH_SENTENCE}"`);
+    expect(buildSystemPrompt([], {})).toContain(`"${NO_MATCH_SENTENCE}"`);
   });
 
   it('injects excerpts with citation ids when there are hits', () => {
-    const prompt = buildSystemPrompt([hit('income-limits#1', 0.61)]);
+    const prompt = buildSystemPrompt([hit('income-limits#1', 0.61)], {});
     expect(prompt).toContain('[income-limits#1]');
     expect(prompt).toContain('The limit is $4,442.');
     expect(prompt).not.toContain('none were retrieved');
   });
 
-  it('declares zero benefit facts when nothing cleared the threshold', () => {
-    const prompt = buildSystemPrompt([]);
+  it('declares zero document excerpts when nothing cleared the threshold', () => {
+    const prompt = buildSystemPrompt([], {});
     expect(prompt).toContain('none were retrieved');
   });
 
   it('never embeds the referral text for the model to copy', () => {
     // The referral is rendered by the UI from shared constants; the model
     // must not author it (verdict-language.md R6).
-    expect(buildSystemPrompt([hit('a#0', 0.5)])).not.toContain(REFERRAL_LINE);
-    expect(buildSystemPrompt([])).not.toContain(REFERRAL_LINE);
+    expect(buildSystemPrompt([hit('a#0', 0.5)], {})).not.toContain(REFERRAL_LINE);
+    expect(buildSystemPrompt([], {})).not.toContain(REFERRAL_LINE);
+  });
+
+  it('lists stored facts in the KNOWN FACTS block and flags pending ones', () => {
+    const prompt = buildSystemPrompt([], {
+      grossMonthlyIncome: { value: 2000, status: 'stated', sourceTurn: 2 },
+      householdSize: { value: 3, status: 'needs_confirmation', sourceTurn: 3 },
+    });
+    expect(prompt).toContain('gross monthly income: $2,000 per month (stated, turn 2)');
+    expect(prompt).toContain('household size: 3 people (NEEDS CONFIRMATION');
+    expect(prompt).toContain('never ask for these again');
+  });
+
+  it('says no facts are stored for an empty CaseFile', () => {
+    expect(buildSystemPrompt([], {})).toContain('KNOWN FACTS: none stored yet');
+  });
+
+  it('never embeds the tier phrases for the model to copy', () => {
+    // Tier phrases are mandatory strings rendered by the UI from shared
+    // constants (verdict-language.md R6); the prompt names them only inside
+    // the do-NOT-write rule.
+    const prompt = buildSystemPrompt([], {});
+    const ruleLine = prompt
+      .split('\n')
+      .filter((line) => line.includes('you likely qualify'));
+    expect(ruleLine).toHaveLength(1);
+    expect(ruleLine[0]).toContain('Do NOT write the tier phrases');
   });
 });
 

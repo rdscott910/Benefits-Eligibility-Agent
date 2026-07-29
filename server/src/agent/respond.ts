@@ -3,16 +3,20 @@ import {
   convertToModelMessages,
   createUIMessageStream,
   pipeUIMessageStreamToResponse,
+  stepCountIs,
   streamText,
   toUIMessageStream,
 } from 'ai';
 import type { Response } from 'express';
 import type {
+  CaseFile,
   ChatMessage,
   CivicReachUIMessage,
   RetrievalPartData,
+  VerdictPartData,
 } from '@civicreach/shared';
 import { MODELS, RETRIEVAL } from '../config';
+import type { IncomeLimitsTable } from '../corpus/income-table';
 import { logError, logRetrieval } from '../log';
 import {
   embedQuery,
@@ -20,16 +24,26 @@ import {
   type RetrievedHit,
   type VectorStore,
 } from '../retrieval/store';
+import { createCheckIncomeThresholdTool } from '../tools/check-income-threshold';
+import { createLookupIncomeLimitsTool } from '../tools/lookup-income-limits';
+import {
+  createUpdateCaseFileTool,
+  type CaseFileHolder,
+} from '../tools/update-case-file';
 import { containsNoMatchSentence } from './no-match';
 import { buildSystemPrompt } from './prompt';
 
 /**
- * The grounded proceed path (Slice 2): retrieve above the explicit
- * threshold, answer with excerpts injected into the system prompt, then emit
- * one typed `data-retrieval` part once the text is complete — `grounded`
- * with citations, `no_match` when the model declared the mandatory no-match
- * sentence (the UI renders the official referral from shared constants), or
- * `conversational` when a turn needed no benefit facts.
+ * The grounded proceed path (Slice 2 retrieval + Slice 3 tools): retrieve
+ * above the explicit threshold, answer with excerpts injected into the
+ * system prompt, and let the model call the deterministic tools —
+ * `updateCaseFile` (the only mutation path for the working CaseFile),
+ * `lookupIncomeLimits`, and `checkIncomeThreshold` (which reads only
+ * stated/confirmed CaseFile facts). After the text completes the server
+ * emits typed parts: `data-retrieval` (grounded / no-match / conversational),
+ * `data-verdict` (only when the threshold tool ran — derived from tool
+ * output, never model text), and `data-casefile` (the post-turn state the
+ * client stores for the next request).
  */
 
 export function retrievalPartFor(options: {
@@ -58,9 +72,19 @@ export function retrievalPartFor(options: {
   return { status: 'conversational' };
 }
 
+/**
+ * Agent-loop step budget per turn: enough for a few `updateCaseFile` calls,
+ * a lookup or threshold check, and the closing narration — bounded so a
+ * confused loop cannot spin.
+ */
+const MAX_AGENT_STEPS = 6;
+
 export async function respondGrounded(options: {
   res: Response;
   store: VectorStore;
+  incomeTable: IncomeLimitsTable;
+  caseFile: CaseFile;
+  sourceTurn: number;
   sanitizedMessages: ChatMessage[];
   sanitizedUserText: string;
 }): Promise<void> {
@@ -81,10 +105,32 @@ export async function respondGrounded(options: {
     citationIds: hits.map((hit) => hit.chunk.citationId),
   });
 
+  // The request CaseFile becomes this turn's working copy; only the
+  // updateCaseFile tool mutates it (state-memory.md R5).
+  const holder: CaseFileHolder = { current: options.caseFile };
+  const verdictHolder: { current: VerdictPartData | null } = { current: null };
+
   const result = streamText({
     model: openai(MODELS.agent),
-    system: buildSystemPrompt(hits),
+    system: buildSystemPrompt(hits, options.caseFile),
     messages: await convertToModelMessages(options.sanitizedMessages),
+    tools: {
+      updateCaseFile: createUpdateCaseFileTool({
+        holder,
+        sourceTurn: options.sourceTurn,
+      }),
+      lookupIncomeLimits: createLookupIncomeLimitsTool({
+        table: options.incomeTable,
+      }),
+      checkIncomeThreshold: createCheckIncomeThresholdTool({
+        table: options.incomeTable,
+        holder,
+        onVerdict: (verdict) => {
+          verdictHolder.current = verdict;
+        },
+      }),
+    },
+    stopWhen: stepCountIs(MAX_AGENT_STEPS),
   });
 
   const stream = createUIMessageStream<CivicReachUIMessage>({
@@ -99,17 +145,32 @@ export async function respondGrounded(options: {
         }),
       );
 
+      // The visible reply is the concatenation of every step's text (tool
+      // calls may sit between segments), so no-match detection runs over
+      // all of it.
       let finalText = '';
       try {
-        finalText = await result.text;
+        const steps = await result.steps;
+        finalText = steps.map((step) => step.text).join('');
       } catch {
         // The stream error was already surfaced to the client via onError;
-        // fall through so the part below reports no grounded citations.
+        // fall through so the parts below report honestly (no citations,
+        // no verdict, unchanged-or-partial CaseFile).
       }
 
       writer.write({
         type: 'data-retrieval',
         data: retrievalPartFor({ finalText, hits, bestScore }),
+      });
+
+      const verdict = verdictHolder.current;
+      if (verdict) {
+        writer.write({ type: 'data-verdict', data: verdict });
+      }
+
+      writer.write({
+        type: 'data-casefile',
+        data: { caseFile: holder.current },
       });
     },
   });

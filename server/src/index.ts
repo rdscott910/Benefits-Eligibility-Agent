@@ -1,20 +1,26 @@
 import express from 'express';
 import { requireEnv } from './config';
 import { chunkCorpus } from './corpus/chunker';
-import { parseIncomeLimitsTable } from './corpus/income-table';
+import {
+  parseIncomeLimitsTable,
+  type IncomeLimitsTable,
+} from './corpus/income-table';
 import { loadCorpusDocuments } from './corpus/loader';
 import { buildVectorStore, type VectorStore } from './retrieval/store';
 import { createChatRouter } from './routes/chat';
 
 const env = requireEnv();
 
+type Grounding = { store: VectorStore; incomeTable: IncomeLimitsTable };
+
 /**
  * Grounding boots before the server listens, and failure refuses to boot:
  * there are no fallback numbers by design (roadmap Slice 2). The embeddings
  * cache is gitignored and keyed by corpus content, so only the first boot
- * (or a corpus edit) pays the embedding calls.
+ * (or a corpus edit) pays the embedding calls. The parsed income-limits
+ * table feeds the Slice 3 deterministic tools.
  */
-async function buildGrounding(): Promise<VectorStore> {
+async function buildGrounding(): Promise<Grounding> {
   const documents = loadCorpusDocuments();
 
   const incomeDoc = documents.find((doc) => doc.doc_id === 'income-limits');
@@ -32,12 +38,12 @@ async function buildGrounding(): Promise<VectorStore> {
       `embeddings ${source === 'cache' ? 'loaded from cache' : 'built'} in ${latencyMs}ms`,
   );
 
-  return store;
+  return { store, incomeTable };
 }
 
-let store: VectorStore;
+let grounding: Grounding;
 try {
-  store = await buildGrounding();
+  grounding = await buildGrounding();
 } catch (error) {
   const message = error instanceof Error ? error.message : String(error);
   console.error(
@@ -58,7 +64,7 @@ try {
 const app = express();
 
 app.use(express.json({ limit: '256kb' }));
-app.use('/api', createChatRouter(store));
+app.use('/api', createChatRouter(grounding));
 
 app.listen(env.PORT, () => {
   console.log(`[server] API listening on http://localhost:${env.PORT}`);

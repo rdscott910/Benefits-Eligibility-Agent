@@ -53,7 +53,7 @@ async function answer(question: string): Promise<{
   });
   const { text } = await generateText({
     model: openai(MODELS.agent),
-    system: buildSystemPrompt(hits),
+    system: buildSystemPrompt(hits, {}),
     prompt: question,
   });
   return { text, hits, part: retrievalPartFor({ finalText: text, hits, bestScore }) };
