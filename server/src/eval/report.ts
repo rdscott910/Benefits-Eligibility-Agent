@@ -62,13 +62,18 @@ type ClassKey =
   | 'precedence'
   | 'calibration'
   | 'grounding'
+  | 'messy_input'
   | 'offline';
 
 function classFor(title: string): ClassKey {
   // R-prefixed items are the Slice 2 grounding suite (grounding.eval.ts);
-  // G is reserved for the Slice 3 adversarial-script section.
+  // G-prefixed items are the Slice 3 adversarial-script section G suite
+  // (state.eval.ts).
   if (/^R\d/.test(title)) {
     return 'grounding';
+  }
+  if (/^G\d/.test(title)) {
+    return 'messy_input';
   }
   if (/^A\d/.test(title) || title.toLowerCase().includes('crisis phrase')) {
     return 'crisis';
@@ -102,6 +107,7 @@ const buckets: Record<
   precedence: { pass: 0, fail: 0, skip: 0, titles: [] },
   calibration: { pass: 0, fail: 0, skip: 0, titles: [] },
   grounding: { pass: 0, fail: 0, skip: 0, titles: [] },
+  messy_input: { pass: 0, fail: 0, skip: 0, titles: [] },
   offline: { pass: 0, fail: 0, skip: 0, titles: [] },
 };
 
