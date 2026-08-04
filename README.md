@@ -1,4 +1,4 @@
-# CivicReach — NC FNS Eligibility Agent
+# CivicReach — NC FNS Eligibility Agent [DEMO]
 
 A text-based agent that helps North Carolina residents assess how likely they
 are to qualify for NC FNS (SNAP) food assistance.
