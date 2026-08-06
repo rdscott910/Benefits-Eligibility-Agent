@@ -1,7 +1,7 @@
 import { readFileSync, readdirSync } from 'node:fs';
 import path from 'node:path';
-import { fileURLToPath } from 'node:url';
 import { z } from 'zod';
+import { corpusDir } from '../paths';
 
 /**
  * Loads the curated corpus from `server/corpus/` (decisions/corpus-scope.md):
@@ -10,10 +10,13 @@ import { z } from 'zod';
  * refuse to start — a wrong corpus must never silently serve answers.
  */
 
-export const CORPUS_DIR = path.resolve(
-  path.dirname(fileURLToPath(import.meta.url)),
-  '../../corpus',
-);
+/** Resolved at call time so Vercel bundles see `server/corpus` via cwd. */
+export function getCorpusDir(): string {
+  return corpusDir();
+}
+
+/** @deprecated Prefer getCorpusDir() — kept for existing test imports. */
+export const CORPUS_DIR = corpusDir();
 
 /** The six settled documents. Adding one is a scope revision (corpus-scope.md). */
 export const EXPECTED_DOC_IDS = [
@@ -79,13 +82,15 @@ export function parseFrontMatter(raw: string, fileName: string): CorpusDocument 
 }
 
 /** Reads and validates all corpus documents, enforcing the six-document scope. */
-export function loadCorpusDocuments(corpusDir: string = CORPUS_DIR): CorpusDocument[] {
-  const files = readdirSync(corpusDir)
+export function loadCorpusDocuments(
+  documentsDir: string = getCorpusDir(),
+): CorpusDocument[] {
+  const files = readdirSync(documentsDir)
     .filter((file) => file.endsWith('.md'))
     .sort();
 
   const documents = files.map((file) =>
-    parseFrontMatter(readFileSync(path.join(corpusDir, file), 'utf8'), file),
+    parseFrontMatter(readFileSync(path.join(documentsDir, file), 'utf8'), file),
   );
 
   const foundIds = documents.map((doc) => doc.doc_id).sort();

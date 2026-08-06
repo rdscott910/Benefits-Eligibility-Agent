@@ -37,6 +37,14 @@ That is the entire setup. `npm run dev` starts the API and the web app together
 and opens <http://localhost:5173> in your browser. Type a message and the reply
 streams in a word at a time.
 
+### Public portfolio demo (optional)
+
+Local `npm run dev` is unchanged. For a hosted demo (e.g. `demo.dev-ron.com`),
+`npm run build` bakes the embeddings cache, builds the Vite client, and
+esbuilds the Express API into `api/index.mjs` for Vercel. Set `OPENAI_API_KEY`
+as both a **build** and **runtime** environment variable. See
+`docs/agent/decisions/portfolio-demo.md`.
+
 The very first boot also builds the embedding index for the six corpus
 documents (a few seconds and one round of embedding calls). The vectors are
 cached in a gitignored file (`server/.embeddings-cache.json`) keyed by the
@@ -269,11 +277,11 @@ Regenerated with `npm run eval`.
 
 | Field | Value |
 | --- | --- |
-| Date | 2026-07-29 |
+| Date | 2026-08-06 |
 | Classifier model | `gpt-5.4-nano` |
 | Classifier prompt version | 3 |
 | Agent model | `gpt-5.6-terra` |
-| Agent prompt version | 5 |
+| Agent prompt version | 6 |
 | Embedding model | `text-embedding-3-small` |
 | Retrieval threshold | 0.28 (top 4) |
 | Envelope version | 4 |

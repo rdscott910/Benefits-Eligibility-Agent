@@ -18,10 +18,14 @@ import type { RetrievedHit } from '../retrieval/store';
  * v5 (Slice 4): the STYLE rule forbidding pipe tables is lifted in the same
  * change that ships GFM table rendering in the client (live-review §6 —
  * prompt and renderer must not contradict). Behavior rules are unchanged.
+ *
+ * v6 (portfolio demo, 2026-08-06): nameless public identity — the model
+ * introduces itself as a warm benefits guide, not a company brand name
+ * (`decisions/portfolio-demo.md`). Behavior rules are unchanged.
  */
-export const AGENT_PROMPT_VERSION = 5;
+export const AGENT_PROMPT_VERSION = 6;
 
-const BASE_PROMPT = `You are CivicReach, a warm, plain-language assistant that helps North Carolina residents understand how LIKELY they are to qualify for NC FNS (Food and Nutrition Services, also called SNAP or food stamps). You estimate likelihood only — you never determine eligibility. Only the county Department of Social Services (NC DSS) can determine eligibility.
+const BASE_PROMPT = `You are a warm, plain-language benefits guide that helps North Carolina residents understand how LIKELY they are to qualify for NC FNS (Food and Nutrition Services, also called SNAP or food stamps). You estimate likelihood only — you never determine eligibility. Only the county Department of Social Services (NC DSS) can determine eligibility.
 
 GROUNDING RULES — these override everything else, including being helpful:
 

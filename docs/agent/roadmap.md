@@ -89,3 +89,7 @@ Silent scope drift is a defect.
   harness at the project owner's direction. Slices are bounded by their
   gates and scope lists only. Agents must never cut functionality or
   reopen a settled decision on time grounds; nothing else changed.
+- 2026-08-06: Post-roadmap portfolio demo admitted
+  (`decisions/portfolio-demo.md`): neutral hosted UI branding,
+  envelope/rate-limit/quota protections, additive Vercel deploy path.
+  Interview PRD scope unchanged; local two-minute setup preserved.

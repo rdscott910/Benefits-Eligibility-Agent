@@ -85,7 +85,10 @@ export const PRICING_USD_PER_1M_TOKENS = {
   embedding: { input: 0.02 },
 } as const;
 
-/** Validate and return env. Exits the process when required values are missing. */
+/**
+ * Validate and return env. Throws on serverless (Vercel); exits the process
+ * for the local `npm run dev` listener so the fix instructions print clearly.
+ */
 export function requireEnv(): Env {
   const parsedEnv = envSchema.safeParse(process.env);
 
@@ -94,21 +97,25 @@ export function requireEnv(): Env {
       .map((issue) => `  - ${issue.path.join('.')}: ${issue.message}`)
       .join('\n');
 
-    console.error(
-      [
-        '',
-        'Cannot start the server — configuration is incomplete:',
-        problems,
-        '',
-        'Fix it with:',
-        '  1. cp .env.example .env',
-        '  2. put your OpenAI API key in .env',
-        '',
-        `Looked for: ${envFile}`,
-        'See README.md for the full run steps.',
-        '',
-      ].join('\n'),
-    );
+    const message = [
+      '',
+      'Cannot start the server — configuration is incomplete:',
+      problems,
+      '',
+      'Fix it with:',
+      '  1. cp .env.example .env',
+      '  2. put your OpenAI API key in .env',
+      '',
+      `Looked for: ${envFile}`,
+      'See README.md for the full run steps.',
+      '',
+    ].join('\n');
+
+    if (process.env.VERCEL) {
+      throw new Error(message.trim());
+    }
+
+    console.error(message);
     process.exit(1);
   }
 

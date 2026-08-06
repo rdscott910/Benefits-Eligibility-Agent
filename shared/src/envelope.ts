@@ -22,12 +22,17 @@ import type { CivicReachUITools } from './tools';
  */
 export const ENVELOPE_VERSION = 4;
 
+/** Portfolio-demo caps (`decisions/portfolio-demo.md`) — ~20 user turns. */
+export const MAX_CHAT_MESSAGES = 40;
+/** Soft ceiling on a single message body so a pasted dump cannot burn tokens. */
+export const MAX_MESSAGE_TEXT_CHARS = 2000;
+
 export const chatRoleSchema = z.enum(['user', 'assistant']);
 export type ChatRole = z.infer<typeof chatRoleSchema>;
 
 export const chatTextPartSchema = z.object({
   type: z.literal('text'),
-  text: z.string(),
+  text: z.string().max(MAX_MESSAGE_TEXT_CHARS),
 });
 export type ChatTextPart = z.infer<typeof chatTextPartSchema>;
 
@@ -40,7 +45,7 @@ export type ChatMessage = z.infer<typeof chatMessageSchema>;
 
 export const chatRequestSchema = z.object({
   envelopeVersion: z.literal(ENVELOPE_VERSION),
-  messages: z.array(chatMessageSchema).min(1),
+  messages: z.array(chatMessageSchema).min(1).max(MAX_CHAT_MESSAGES),
   /**
    * Session CaseFile from browser memory (v3). Optional so a fresh session
    * needs no state; unknown fields are dropped by Zod object stripping.
@@ -75,7 +80,12 @@ export type CivicReachUIMessage = UIMessage<
   CivicReachUITools
 >;
 
-export const apiErrorCodeSchema = z.enum(['invalid_request', 'internal_error']);
+export const apiErrorCodeSchema = z.enum([
+  'invalid_request',
+  'internal_error',
+  'rate_limited',
+  'provider_unavailable',
+]);
 export type ApiErrorCode = z.infer<typeof apiErrorCodeSchema>;
 
 /** Shape of any non-streamed failure response, so the client never parses guesswork. */

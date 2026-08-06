@@ -29,6 +29,10 @@ the roadmap's scope-revision log.
 - Active slice: none — the roadmap is COMPLETE. Slice 4 (the final
   slice) passed its gate 2026-07-29; what remains is the live review
   itself. There is no Slice 5.
+- Post-roadmap (2026-08-06): public portfolio demo work is recorded in
+  `decisions/portfolio-demo.md` — neutral hosted UI branding, abuse/cost
+  controls, and an additive Vercel deploy path. Does not reopen Slice
+  0–4 gates; `npm install && npm run dev` remains the local setup.
 - Built so far: Slice 0 shell, Slice 1 guardrails, Slice 2 grounded RAG,
   Slice 3 deterministic tools + multi-turn state — three Zod tools
   consuming the boot-parsed income-limits table (`lookupIncomeLimits`,

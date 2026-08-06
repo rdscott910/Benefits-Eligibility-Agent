@@ -6,6 +6,8 @@ import remarkGfm from 'remark-gfm';
 import {
   ENVELOPE_VERSION,
   GUARDRAIL_BADGE_LABELS,
+  MAX_CHAT_MESSAGES,
+  MAX_MESSAGE_TEXT_CHARS,
   REFERRAL_LINE,
   VERDICT_SUFFIX,
   VERDICT_TIER_PHRASES,
@@ -33,6 +35,27 @@ import {
   type TraceTokenUsage,
   type VerdictPartData,
 } from '@civicreach/shared';
+
+const CASE_STUDY_URL =
+  'https://dev-ron.com/projects/benefits-eligibility-agent';
+const GITHUB_URL =
+  'https://github.com/rdscott910/Benefits-Eligibility-Agent';
+
+function friendlyRequestError(error: Error): string {
+  const raw = error.message;
+  if (/rate_limited|Too many requests/i.test(raw)) {
+    return 'Too many requests from this network. Wait a minute, then try again.';
+  }
+  if (/provider_unavailable|demo is resting/i.test(raw)) {
+    return 'The demo is resting — try again later.';
+  }
+  if (/Session limit|too long|2,000 characters/i.test(raw)) {
+    return raw.includes('Session')
+      ? 'Session limit reached — refresh the page to start fresh.'
+      : 'That message is too long. Shorten it and try again.';
+  }
+  return `The request failed: ${raw}`;
+}
 
 /**
  * Central markdown renderer for model text and corpus chunks, so rendering
@@ -808,10 +831,27 @@ export function App() {
     }
   }, [messages, setMessages, status]);
 
+  const atSessionLimit = toEnvelopeMessages(messages).length >= MAX_CHAT_MESSAGES;
+
   return (
     <div className="app">
+      <aside className="demo-banner" role="note">
+        <p>
+          Portfolio demo — estimates likelihood only. Only your county
+          Department of Social Services can determine eligibility. Nothing you
+          type is stored on a server (refresh clears this session).{' '}
+          <a href={CASE_STUDY_URL} target="_blank" rel="noreferrer">
+            Case study
+          </a>
+          {' · '}
+          <a href={GITHUB_URL} target="_blank" rel="noreferrer">
+            Source on GitHub
+          </a>
+        </p>
+      </aside>
+
       <header className="header">
-        <h1>CivicReach</h1>
+        <h1>NC SNAP Benefits Eligibility Agent</h1>
         <p>
           Estimates how likely you are to qualify for NC FNS food assistance.
           Answers are grounded in six official NC documents (click a source
@@ -893,7 +933,14 @@ export function App() {
 
         {error && (
           <p className="error" role="alert">
-            The request failed: {error.message}
+            {friendlyRequestError(error)}
+          </p>
+        )}
+
+        {atSessionLimit && !error && (
+          <p className="error" role="status">
+            Session limit reached — refresh the page to start a fresh
+            conversation.
           </p>
         )}
 
@@ -907,7 +954,10 @@ export function App() {
         onSubmit={(event) => {
           event.preventDefault();
           const text = input.trim();
-          if (!text || isBusy) {
+          if (!text || isBusy || atSessionLimit) {
+            return;
+          }
+          if (text.length > MAX_MESSAGE_TEXT_CHARS) {
             return;
           }
           void sendMessage({ text });
@@ -920,9 +970,15 @@ export function App() {
           onChange={(event) => setInput(event.target.value)}
           placeholder="Say something…"
           aria-label="Message"
+          maxLength={MAX_MESSAGE_TEXT_CHARS}
+          disabled={atSessionLimit}
           autoFocus
         />
-        <button className="composer__send" type="submit" disabled={isBusy || !input.trim()}>
+        <button
+          className="composer__send"
+          type="submit"
+          disabled={isBusy || atSessionLimit || !input.trim()}
+        >
           {isBusy ? 'Streaming…' : 'Send'}
         </button>
       </form>

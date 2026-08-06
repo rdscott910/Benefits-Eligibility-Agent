@@ -157,6 +157,11 @@ export async function respondGrounded(options: {
           stream: result.stream,
           onError: (error) => {
             logError('agent_stream', error);
+            const message =
+              error instanceof Error ? error.message : String(error);
+            if (/429|insufficient_quota|rate.?limit|billing/i.test(message)) {
+              return 'The demo is resting — the model provider is temporarily unavailable. Try again later.';
+            }
             return 'The model call failed.';
           },
         }),

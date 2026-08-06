@@ -1,12 +1,11 @@
 import { createHash } from 'node:crypto';
 import { existsSync, readFileSync, writeFileSync } from 'node:fs';
-import path from 'node:path';
-import { fileURLToPath } from 'node:url';
 import { openai } from '@ai-sdk/openai';
 import { cosineSimilarity, embed, embedMany } from 'ai';
 import { z } from 'zod';
 import { MODELS } from '../config';
 import { embeddingInput, type CorpusChunk } from '../corpus/chunker';
+import { embeddingsCacheFile } from '../paths';
 
 /**
  * In-memory vector store, rebuilt from `server/corpus/` markdown at every
@@ -16,10 +15,13 @@ import { embeddingInput, type CorpusChunk } from '../corpus/chunker';
  * an unchanged corpus makes no embedding calls, and any corpus edit rebuilds.
  */
 
-export const EMBEDDINGS_CACHE_FILE = path.resolve(
-  path.dirname(fileURLToPath(import.meta.url)),
-  '../../.embeddings-cache.json',
-);
+/** Resolved at call time so Vercel bundles see the cache via project cwd. */
+export function getEmbeddingsCacheFile(): string {
+  return embeddingsCacheFile();
+}
+
+/** @deprecated Prefer getEmbeddingsCacheFile() — kept for existing imports. */
+export const EMBEDDINGS_CACHE_FILE = embeddingsCacheFile();
 
 const cacheFileSchema = z.object({
   key: z.string().min(1),
@@ -52,12 +54,13 @@ export function corpusCacheKey(chunks: CorpusChunk[], modelId: string): string {
 }
 
 function readCachedVectors(key: string, chunkCount: number): number[][] | null {
-  if (!existsSync(EMBEDDINGS_CACHE_FILE)) {
+  const cachePath = getEmbeddingsCacheFile();
+  if (!existsSync(cachePath)) {
     return null;
   }
   try {
     const parsed = cacheFileSchema.safeParse(
-      JSON.parse(readFileSync(EMBEDDINGS_CACHE_FILE, 'utf8')),
+      JSON.parse(readFileSync(cachePath, 'utf8')),
     );
     if (
       !parsed.success ||
@@ -98,7 +101,7 @@ export async function buildVectorStore(
   });
 
   writeFileSync(
-    EMBEDDINGS_CACHE_FILE,
+    getEmbeddingsCacheFile(),
     JSON.stringify({ key, model: MODELS.embedding, vectors: embeddings }),
   );
 
