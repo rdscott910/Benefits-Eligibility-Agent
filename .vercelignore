@@ -1,0 +1,16 @@
+.git
+.cursor
+node_modules
+client/node_modules
+server/node_modules
+shared/node_modules
+client/dist
+docs
+prompts
+**/*.test.ts
+**/*.eval.ts
+server/src/eval/last-run.json
+.env
+.env.local
+*.log
+.DS_Store

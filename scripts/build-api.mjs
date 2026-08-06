@@ -14,14 +14,12 @@ await esbuild.build({
   platform: 'node',
   target: 'node22',
   format: 'esm',
-  outfile: path.join(root, 'api/index.mjs'),
-  // Keep packages that ship native/optional bits external? Bundle all JS.
+  outfile: path.join(root, 'api/index.js'),
   packages: 'bundle',
   banner: {
-    // Node ESM named-export interop for a few CJS-only deps.
     js: `import { createRequire as __createRequire } from 'module'; const require = __createRequire(import.meta.url);`,
   },
   logLevel: 'info',
 });
 
-console.log('[build-api] wrote api/index.mjs');
+console.log('[build-api] wrote api/index.js');

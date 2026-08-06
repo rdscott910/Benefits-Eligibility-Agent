@@ -41,7 +41,7 @@ streams in a word at a time.
 
 Local `npm run dev` is unchanged. For a hosted demo (e.g. `demo.dev-ron.com`),
 `npm run build` bakes the embeddings cache, builds the Vite client, and
-esbuilds the Express API into `api/index.mjs` for Vercel. Set `OPENAI_API_KEY`
+esbuilds the Express API into `api/index.js` for Vercel. Set `OPENAI_API_KEY`
 as both a **build** and **runtime** environment variable. See
 `docs/agent/decisions/portfolio-demo.md`.
 

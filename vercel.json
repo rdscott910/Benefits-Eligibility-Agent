@@ -8,7 +8,7 @@
     { "source": "/api/(.*)", "destination": "/api" }
   ],
   "functions": {
-    "api/index.mjs": {
+    "api/index.js": {
       "includeFiles": "server/{corpus/**,.embeddings-cache.json}",
       "maxDuration": 60
     }

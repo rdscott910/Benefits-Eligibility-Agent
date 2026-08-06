@@ -6,7 +6,8 @@ dist/
 .DS_Store
 server/src/eval/last-run.json
 server/.embeddings-cache.json
-api/index.mjs
-api/index.mjs.map
+api/index.js
+api/index.js.map
 .vercel
 .cursor/hooks/state/
+.env*
