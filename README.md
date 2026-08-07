@@ -3,6 +3,8 @@
 A text-based agent that helps North Carolina residents assess how likely they
 are to qualify for NC FNS (SNAP) food assistance.
 
+See the [live demo here](https://demo.dev-ron.com/)
+
 **This repository is complete through Slice 4, the final slice.** What exists
 is the streaming skeleton, pre-flight guardrail middleware (crisis,
 injection, PII, out-of-scope), grounded retrieval — every benefit figure in
